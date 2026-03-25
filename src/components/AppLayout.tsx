@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Users, ClipboardList, BarChart3, Home, LogOut } from "lucide-react";
+import { Users, ClipboardList, BarChart3, Home, LogOut, Settings } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 const navItems = [
