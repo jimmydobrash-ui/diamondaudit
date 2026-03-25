@@ -3,14 +3,14 @@ import { Users, ClipboardList, BarChart3, Home, LogOut, Settings } from "lucide-
 import { useAuth } from "@/hooks/useAuth";
 
 const navItems = [
-  { to: "/", icon: Home, label: "Home" },
-  { to: "/players", icon: Users, label: "Players" },
-  { to: "/evaluate", icon: ClipboardList, label: "Evaluate" },
-  { to: "/leaderboard", icon: BarChart3, label: "Results" },
-  { to: "/settings/template", icon: Settings, label: "Settings" },
-];
+{ to: "/", icon: Home, label: "Home" },
+{ to: "/players", icon: Users, label: "Players" },
+{ to: "/evaluate", icon: ClipboardList, label: "Evaluate" },
+{ to: "/leaderboard", icon: BarChart3, label: "Results" },
+{ to: "/settings/template", icon: Settings, label: "Settings" }];
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+
+export default function AppLayout({ children }: {children: React.ReactNode;}) {
   const location = useLocation();
   const { profile, role, signOut } = useAuth();
 
@@ -22,7 +22,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-sm">TE</span>
             </div>
-            <span className="font-semibold text-foreground tracking-tight hidden sm:inline">Tryout Eval</span>
+            <span className="font-semibold text-foreground tracking-tight hidden sm:inline">DiamondAudit
+</span>
           </Link>
           <div className="flex items-center gap-2">
             <div className="h-8 px-3 rounded-full bg-secondary flex items-center gap-2">
@@ -44,19 +45,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t safe-area-pb">
         <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.to || (item.to !== "/" && location.pathname.startsWith(item.to));
-            return (
-              <Link key={item.to} to={item.to}
-                className={`touch-target flex flex-col items-center justify-center gap-0.5 transition-colors ${isActive ? "text-primary" : "text-muted-foreground"}`}
-              >
+          {navItems.map((item) => {const isActive = location.pathname === item.to || item.to !== "/" && location.pathname.startsWith(item.to);
+              return (
+                <Link key={item.to} to={item.to}
+                className={`touch-target flex flex-col items-center justify-center gap-0.5 transition-colors ${isActive ? "text-primary" : "text-muted-foreground"}`}>
+                
                 <item.icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
                 <span className="text-[10px] font-medium">{item.label}</span>
-              </Link>
-            );
-          })}
+              </Link>);
+
+            })}
         </div>
       </nav>
-    </div>
-  );
+    </div>);
+
 }
