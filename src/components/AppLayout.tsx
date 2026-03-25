@@ -7,6 +7,7 @@ const navItems = [
   { to: "/players", icon: Users, label: "Players" },
   { to: "/evaluate", icon: ClipboardList, label: "Evaluate" },
   { to: "/leaderboard", icon: BarChart3, label: "Results" },
+  { to: "/settings/template", icon: Settings, label: "Settings" },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
