@@ -41,6 +41,7 @@ const AppRoutes = () => (
     <Route path="/evaluate" element={<ProtectedRoute><EvaluateList /></ProtectedRoute>} />
     <Route path="/evaluate/:playerId" element={<ProtectedRoute><EvaluatePlayer /></ProtectedRoute>} />
     <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+    <Route path="/settings/template" element={<ProtectedRoute><ManageTemplate /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
