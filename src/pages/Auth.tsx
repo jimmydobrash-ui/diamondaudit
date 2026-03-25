@@ -29,7 +29,9 @@ export default function Auth() {
         if (authError) throw authError;
 
         if (authData.user && orgName.trim()) {
-          // Create organization and assign admin role
+          // Wait briefly for the handle_new_user trigger to create the profile
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
           const slug = orgName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
           const { data: org, error: orgErr } = await supabase
             .from("organizations")
@@ -37,18 +39,24 @@ export default function Auth() {
             .select()
             .single();
           
-          if (!orgErr && org) {
-            await supabase.from("user_roles").insert({
+          if (orgErr) {
+            console.error("Org creation error:", orgErr);
+            toast.error("Failed to create organization: " + orgErr.message);
+          } else if (org) {
+            const { error: roleErr } = await supabase.from("user_roles").insert({
               user_id: authData.user.id,
               organization_id: org.id,
               role: "admin",
             });
-            await supabase.from("profiles").update({
+            if (roleErr) console.error("Role insert error:", roleErr);
+
+            const { error: profErr } = await supabase.from("profiles").update({
               current_organization_id: org.id,
             }).eq("user_id", authData.user.id);
+            if (profErr) console.error("Profile update error:", profErr);
           }
         }
-        toast.success("Account created! Check your email to confirm.");
+        toast.success("Account created! You're signed in.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
