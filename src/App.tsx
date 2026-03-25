@@ -11,6 +11,7 @@ import ImportPlayers from "./pages/ImportPlayers";
 import EvaluateList from "./pages/EvaluateList";
 import EvaluatePlayer from "./pages/EvaluatePlayer";
 import Leaderboard from "./pages/Leaderboard";
+import ManageTemplate from "./pages/ManageTemplate";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -40,6 +41,7 @@ const AppRoutes = () => (
     <Route path="/evaluate" element={<ProtectedRoute><EvaluateList /></ProtectedRoute>} />
     <Route path="/evaluate/:playerId" element={<ProtectedRoute><EvaluatePlayer /></ProtectedRoute>} />
     <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+    <Route path="/settings/template" element={<ProtectedRoute><ManageTemplate /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

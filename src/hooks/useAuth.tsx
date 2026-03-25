@@ -83,6 +83,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return null;
     }
 
+    // Seed default evaluation template
+    await supabase.from("evaluation_templates").insert({
+      name: "Baseball Default",
+      organization_id: org.id,
+      is_default: true,
+      sport: "baseball",
+      categories: [
+        { id: "hitting", name: "Hitting", skills: [
+          { id: "contact", label: "Contact", type: "slider" },
+          { id: "power", label: "Power", type: "slider" },
+          { id: "batSpeed", label: "Bat Speed", type: "slider" },
+          { id: "approach", label: "Approach", type: "slider" },
+          { id: "exitVelo", label: "Exit Velocity", type: "number", unit: "mph" },
+        ]},
+        { id: "fielding", name: "Fielding", skills: [
+          { id: "glovePresentation", label: "Glove Work", type: "slider" },
+          { id: "prepStep", label: "Prep Step", type: "slider" },
+          { id: "hands", label: "Hands", type: "slider" },
+          { id: "footwork", label: "Footwork", type: "slider" },
+          { id: "fieldingOverall", label: "Overall", type: "slider" },
+        ]},
+        { id: "pitching", name: "Pitching", skills: [
+          { id: "command", label: "Command", type: "slider" },
+          { id: "control", label: "Control", type: "slider" },
+          { id: "changeup", label: "Changeup", type: "slider" },
+          { id: "breakingBall", label: "Breaking Ball", type: "slider" },
+          { id: "fbVelo", label: "Fastball Velo", type: "number", unit: "mph" },
+          { id: "changeupVelo", label: "Changeup Velo", type: "number", unit: "mph" },
+          { id: "breakingVelo", label: "Breaking Ball Velo", type: "number", unit: "mph" },
+        ]},
+        { id: "catching", name: "Catching", skills: [
+          { id: "receiving", label: "Receiving", type: "slider" },
+          { id: "transfer", label: "Transfer", type: "slider" },
+          { id: "blocking", label: "Blocking", type: "slider" },
+          { id: "catchingOverall", label: "Overall", type: "slider" },
+          { id: "popTime", label: "Pop Time", type: "number", unit: "sec" },
+        ]},
+        { id: "running", name: "Running", skills: [
+          { id: "lateralSpeed", label: "Lateral Speed", type: "slider" },
+          { id: "homeToFirst", label: "Home to 1st", type: "number", unit: "sec" },
+          { id: "sixtyYard", label: "60-Yard Dash", type: "number", unit: "sec" },
+        ]},
+        { id: "throwing", name: "Throwing", skills: [
+          { id: "armStrength", label: "Arm Strength", type: "slider" },
+          { id: "armAccuracy", label: "Arm Accuracy", type: "slider" },
+          { id: "infieldVelo", label: "IF Throw Velo", type: "number", unit: "mph" },
+          { id: "outfieldVelo", label: "OF Throw Velo", type: "number", unit: "mph" },
+          { id: "catcherVelo", label: "C Throw Velo", type: "number", unit: "mph" },
+        ]},
+      ] as any,
+    });
+
     return org.id;
   };
 

@@ -3,9 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import AppLayout from "@/components/AppLayout";
 import EvaluationSlider from "@/components/EvaluationSlider";
-import { evaluationTemplate, getAgeGroup } from "@/lib/mock-data";
+import EvaluationNumberInput from "@/components/EvaluationNumberInput";
+import { getAgeGroup } from "@/lib/mock-data";
 import { usePlayers } from "@/hooks/usePlayers";
 import { usePlayerEvaluation, useSaveEvaluation } from "@/hooks/useEvaluations";
+import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
 import { ArrowLeft, ArrowRight, Save, Check } from "lucide-react";
 import { toast } from "sonner";
 
@@ -14,29 +16,36 @@ export default function EvaluatePlayer() {
   const navigate = useNavigate();
   const { data: players = [] } = usePlayers();
   const { data: existingEval } = usePlayerEvaluation(playerId);
+  const { data: template } = useEvaluationTemplate();
   const saveEval = useSaveEvaluation();
 
   const player = players.find(p => p.id === playerId);
   const [activeCategory, setActiveCategory] = useState(0);
-  const [scores, setScores] = useState<Record<string, number>>({});
+  const [scores, setScores] = useState<Record<string, number | null>>({});
   const [notes, setNotes] = useState("");
   const [saved, setSaved] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
+  const categories = template?.categories ?? [];
+
   // Initialize scores from existing evaluation or defaults
   useEffect(() => {
-    if (initialized) return;
+    if (initialized || !categories.length) return;
     const existing = existingEval?.scores as Record<string, number> | undefined;
-    const initial: Record<string, number> = {};
-    evaluationTemplate.forEach(cat => {
+    const initial: Record<string, number | null> = {};
+    categories.forEach(cat => {
       cat.skills.forEach(skill => {
-        initial[skill.id] = existing?.[skill.id] ?? 5;
+        if (skill.type === "slider") {
+          initial[skill.id] = existing?.[skill.id] ?? 5;
+        } else {
+          initial[skill.id] = existing?.[skill.id] ?? null;
+        }
       });
     });
     setScores(initial);
     setNotes(existingEval?.notes ?? player?.notes ?? "");
     if (existingEval !== undefined || player) setInitialized(true);
-  }, [existingEval, player, initialized]);
+  }, [existingEval, player, initialized, categories]);
 
   // Reset when player changes
   useEffect(() => {
@@ -45,15 +54,20 @@ export default function EvaluatePlayer() {
     setActiveCategory(0);
   }, [playerId]);
 
-  const handleScoreChange = useCallback((skillId: string, value: number) => {
+  const handleScoreChange = useCallback((skillId: string, value: number | null) => {
     setScores(prev => ({ ...prev, [skillId]: value }));
     setSaved(false);
   }, []);
 
   const handleSave = async () => {
     if (!playerId) return;
+    // Filter out null values for storage
+    const cleanScores: Record<string, number> = {};
+    Object.entries(scores).forEach(([k, v]) => {
+      if (v !== null && v !== undefined) cleanScores[k] = v;
+    });
     try {
-      await saveEval.mutateAsync({ playerId, scores, notes });
+      await saveEval.mutateAsync({ playerId, scores: cleanScores, notes });
       setSaved(true);
       toast.success("Evaluation saved!");
     } catch (err: any) {
@@ -79,7 +93,7 @@ export default function EvaluatePlayer() {
     );
   }
 
-  if (!player) {
+  if (!player || !categories.length) {
     return (
       <AppLayout>
         <div className="container py-12 flex justify-center">
@@ -89,7 +103,7 @@ export default function EvaluatePlayer() {
     );
   }
 
-  const currentCategory = evaluationTemplate[activeCategory];
+  const currentCategory = categories[activeCategory];
   const playerIndex = players.findIndex(p => p.id === playerId);
   const prevPlayer = playerIndex > 0 ? players[playerIndex - 1] : null;
   const nextPlayer = playerIndex < players.length - 1 ? players[playerIndex + 1] : null;
@@ -118,19 +132,36 @@ export default function EvaluatePlayer() {
         </motion.div>
 
         <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
-          {evaluationTemplate.map((cat, i) => (
+          {categories.map((cat, i) => (
             <button key={cat.id} onClick={() => setActiveCategory(i)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${activeCategory === i ? "bg-foreground text-background" : "bg-secondary text-muted-foreground"}`}
             >{cat.name}</button>
           ))}
         </div>
 
-        <motion.div key={currentCategory.id} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2 }} className="space-y-1 bg-card rounded-xl p-4 card-elevated">
-          <h2 className="text-sm font-semibold text-foreground mb-3">{currentCategory.name}</h2>
-          {currentCategory.skills.map(skill => (
-            <EvaluationSlider key={skill.id} label={skill.label} value={scores[skill.id] ?? 5} onChange={v => handleScoreChange(skill.id, v)} />
-          ))}
-        </motion.div>
+        {currentCategory && (
+          <motion.div key={currentCategory.id} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2 }} className="space-y-1 bg-card rounded-xl p-4 card-elevated">
+            <h2 className="text-sm font-semibold text-foreground mb-3">{currentCategory.name}</h2>
+            {currentCategory.skills.map(skill =>
+              skill.type === "number" ? (
+                <EvaluationNumberInput
+                  key={skill.id}
+                  label={skill.label}
+                  value={(scores[skill.id] as number | null) ?? null}
+                  unit={skill.unit ?? ""}
+                  onChange={v => handleScoreChange(skill.id, v)}
+                />
+              ) : (
+                <EvaluationSlider
+                  key={skill.id}
+                  label={skill.label}
+                  value={(scores[skill.id] as number) ?? 5}
+                  onChange={v => handleScoreChange(skill.id, v)}
+                />
+              )
+            )}
+          </motion.div>
+        )}
 
         <div className="bg-card rounded-xl p-4 card-elevated">
           <label className="text-sm font-semibold text-foreground block mb-2">Notes</label>

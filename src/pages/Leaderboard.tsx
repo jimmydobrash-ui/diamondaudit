@@ -4,19 +4,25 @@ import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useEvaluations } from "@/hooks/useEvaluations";
-import { getAgeGroup, evaluationTemplate } from "@/lib/mock-data";
+import { useEvaluationTemplate, TemplateCategory } from "@/hooks/useEvaluationTemplate";
+import { getAgeGroup } from "@/lib/mock-data";
 import { BarChart3, Trophy } from "lucide-react";
 
-function calcOverall(scores: Record<string, number>): number {
-  const vals = Object.values(scores);
+function calcOverall(scores: Record<string, number>, categories: TemplateCategory[]): number {
+  // Only average slider-type skills for overall score
+  const sliderIds = new Set(
+    categories.flatMap(c => c.skills.filter(s => s.type === "slider").map(s => s.id))
+  );
+  const vals = Object.entries(scores)
+    .filter(([k]) => sliderIds.has(k))
+    .map(([, v]) => v);
   if (!vals.length) return 0;
   return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
 }
 
-function calcCategoryAvg(scores: Record<string, number>, categoryId: string): number | null {
-  const cat = evaluationTemplate.find(c => c.id === categoryId);
-  if (!cat) return null;
-  const vals = cat.skills.map(s => scores[s.id]).filter((v): v is number => v !== undefined);
+function calcCategoryAvg(scores: Record<string, number>, category: TemplateCategory): number | null {
+  const sliderSkills = category.skills.filter(s => s.type === "slider");
+  const vals = sliderSkills.map(s => scores[s.id]).filter((v): v is number => v !== undefined);
   if (!vals.length) return null;
   return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
 }
@@ -26,8 +32,10 @@ export default function Leaderboard() {
   const [ageFilter, setAgeFilter] = useState("all");
   const { data: players = [] } = usePlayers();
   const { data: evaluations = [] } = useEvaluations();
+  const { data: template } = useEvaluationTemplate();
 
-  // Aggregate scores across all coaches per player
+  const categories = template?.categories ?? [];
+
   const playerAggregates = useMemo(() => {
     const map: Record<string, Record<string, number[]>> = {};
     evaluations.forEach(ev => {
@@ -38,7 +46,6 @@ export default function Leaderboard() {
         map[ev.player_id][key].push(val);
       });
     });
-    // Average each skill across coaches
     return Object.fromEntries(
       Object.entries(map).map(([pid, skills]) => [
         pid,
@@ -60,19 +67,21 @@ export default function Leaderboard() {
         const scores = playerAggregates[p.id] ?? {};
         return {
           player: p,
-          overall: calcOverall(scores),
+          overall: calcOverall(scores, categories),
           scores,
-          categoryScores: evaluationTemplate.map(cat => ({ category: cat.name, id: cat.id, avg: calcCategoryAvg(scores, cat.id) })),
+          categoryScores: categories.map(cat => ({ category: cat.name, id: cat.id, avg: calcCategoryAvg(scores, cat) })),
         };
       })
       .filter(p => p.overall > 0)
       .sort((a, b) => {
         if (sortBy === "overall") return b.overall - a.overall;
-        const aScore = calcCategoryAvg(a.scores, sortBy) ?? 0;
-        const bScore = calcCategoryAvg(b.scores, sortBy) ?? 0;
+        const cat = categories.find(c => c.id === sortBy);
+        if (!cat) return 0;
+        const aScore = calcCategoryAvg(a.scores, cat) ?? 0;
+        const bScore = calcCategoryAvg(b.scores, cat) ?? 0;
         return bScore - aScore;
       });
-  }, [players, playerAggregates, sortBy, ageFilter]);
+  }, [players, playerAggregates, sortBy, ageFilter, categories]);
 
   return (
     <AppLayout>
@@ -96,7 +105,7 @@ export default function Leaderboard() {
           )}
           <div className="flex gap-2 overflow-x-auto pb-1">
             <button onClick={() => setSortBy("overall")} className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${sortBy === "overall" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}>Overall</button>
-            {evaluationTemplate.map(cat => (
+            {categories.map(cat => (
               <button key={cat.id} onClick={() => setSortBy(cat.id)} className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${sortBy === cat.id ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}>{cat.name}</button>
             ))}
           </div>
@@ -104,7 +113,8 @@ export default function Leaderboard() {
 
         <div className="space-y-2">
           {ranked.map((item, i) => {
-            const displayScore = sortBy === "overall" ? item.overall : (calcCategoryAvg(item.scores, sortBy) ?? 0);
+            const cat = categories.find(c => c.id === sortBy);
+            const displayScore = sortBy === "overall" ? item.overall : (cat ? calcCategoryAvg(item.scores, cat) ?? 0 : 0);
             return (
               <motion.div key={item.player.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
                 <Link to={`/evaluate/${item.player.id}`} className="flex items-center gap-3 p-3 rounded-xl bg-card card-elevated hover:bg-secondary/50 transition-all">
