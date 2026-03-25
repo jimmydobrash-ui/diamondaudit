@@ -11,6 +11,7 @@ import ImportPlayers from "./pages/ImportPlayers";
 import EvaluateList from "./pages/EvaluateList";
 import EvaluatePlayer from "./pages/EvaluatePlayer";
 import Leaderboard from "./pages/Leaderboard";
+import ManageTemplate from "./pages/ManageTemplate";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
