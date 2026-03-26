@@ -137,6 +137,51 @@ export type Database = {
         }
         Relationships: []
       }
+      player_grades: {
+        Row: {
+          coach_id: string
+          created_at: string
+          grade: Database["public"]["Enums"]["player_grade"]
+          id: string
+          organization_id: string
+          player_id: string
+          updated_at: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          grade: Database["public"]["Enums"]["player_grade"]
+          id?: string
+          organization_id: string
+          player_id: string
+          updated_at?: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          grade?: Database["public"]["Enums"]["player_grade"]
+          id?: string
+          organization_id?: string
+          player_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_grades_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_grades_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           bats: string
@@ -331,6 +376,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "coach"
+      player_grade: "offer" | "bubble" | "pass"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -459,6 +505,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "coach"],
+      player_grade: ["offer", "bubble", "pass"],
     },
   },
 } as const
