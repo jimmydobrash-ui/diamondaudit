@@ -1,11 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
-import { Users, ClipboardList, BarChart3, Home, LogOut, Settings } from "lucide-react";
+import { Users, ClipboardList, BarChart3, Home, LogOut, Settings, Layers } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 const navItems = [
 { to: "/", icon: Home, label: "Home" },
 { to: "/players", icon: Users, label: "Players" },
 { to: "/evaluate", icon: ClipboardList, label: "Evaluate" },
+{ to: "/team-builder", icon: Layers, label: "Build" },
 { to: "/leaderboard", icon: BarChart3, label: "Results" },
 { to: "/settings/template", icon: Settings, label: "Settings" }];
 
