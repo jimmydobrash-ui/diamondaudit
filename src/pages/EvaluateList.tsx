@@ -6,6 +6,8 @@ import { useEvaluations } from "@/hooks/useEvaluations";
 import { getAgeGroup } from "@/lib/mock-data";
 import { ClipboardList, ChevronRight } from "lucide-react";
 import { useMemo } from "react";
+import { useMyPlayerGrades } from "@/hooks/usePlayerGrades";
+import GradeBadge from "@/components/GradeBadge";
 
 function calcOverall(scores: Record<string, number>): number {
   const vals = Object.values(scores);
