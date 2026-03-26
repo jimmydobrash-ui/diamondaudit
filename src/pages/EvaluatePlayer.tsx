@@ -19,6 +19,8 @@ export default function EvaluatePlayer() {
   const { data: players = [] } = usePlayers();
   const { data: existingEval } = usePlayerEvaluation(playerId);
   const { data: template } = useEvaluationTemplate();
+  const { data: myGrades = [] } = useMyPlayerGrades();
+  const setGradeMutation = useSetPlayerGrade();
   const saveEval = useSaveEvaluation();
 
   const player = players.find(p => p.id === playerId);
