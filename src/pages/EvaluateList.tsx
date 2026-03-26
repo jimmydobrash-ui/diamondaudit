@@ -67,6 +67,7 @@ export default function EvaluateList() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-foreground truncate">{player.first_name} {player.last_name}</span>
+                      {gradeMap[player.id] && <GradeBadge grade={gradeMap[player.id] as any} />}
                       {player.tags.includes("Top Prospect") && (
                         <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary">TOP</span>
                       )}
