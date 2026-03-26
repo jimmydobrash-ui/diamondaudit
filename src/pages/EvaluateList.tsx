@@ -18,6 +18,13 @@ function calcOverall(scores: Record<string, number>): number {
 export default function EvaluateList() {
   const { data: players = [], isLoading } = usePlayers();
   const { data: evaluations = [] } = useEvaluations();
+  const { data: grades = [] } = useMyPlayerGrades();
+
+  const gradeMap = useMemo(() => {
+    const m: Record<string, string> = {};
+    grades.forEach(g => { m[g.player_id] = g.grade; });
+    return m;
+  }, [grades]);
 
   const playerScores = useMemo(() => {
     const map: Record<string, number[]> = {};
