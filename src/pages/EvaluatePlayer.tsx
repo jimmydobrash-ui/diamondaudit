@@ -8,6 +8,8 @@ import { getAgeGroup } from "@/lib/mock-data";
 import { usePlayers } from "@/hooks/usePlayers";
 import { usePlayerEvaluation, useSaveEvaluation } from "@/hooks/useEvaluations";
 import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
+import { useMyPlayerGrades, useSetPlayerGrade, type PlayerGradeValue } from "@/hooks/usePlayerGrades";
+import GradeBadge from "@/components/GradeBadge";
 import { ArrowLeft, ArrowRight, Save, Check } from "lucide-react";
 import { toast } from "sonner";
 
