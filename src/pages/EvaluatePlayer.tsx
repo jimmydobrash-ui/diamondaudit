@@ -167,6 +167,41 @@ export default function EvaluatePlayer() {
           </motion.div>
         )}
 
+        {/* Grade Selection */}
+        {(() => {
+          const currentGrade = myGrades.find(g => g.player_id === playerId)?.grade ?? null;
+          const gradeOptions: { key: PlayerGradeValue; label: string; color: string }[] = [
+            { key: "offer", label: "Offer", color: "border-emerald-500/40" },
+            { key: "bubble", label: "Bubble", color: "border-amber-500/40" },
+            { key: "pass", label: "Pass", color: "border-red-500/40" },
+          ];
+          return (
+            <div className="bg-card rounded-xl p-4 card-elevated">
+              <label className="text-sm font-semibold text-foreground block mb-2">Player Grade</label>
+              <div className="flex gap-2">
+                {gradeOptions.map(opt => {
+                  const isActive = currentGrade === opt.key;
+                  return (
+                    <button
+                      key={opt.key}
+                      onClick={() => playerId && setGradeMutation.mutateAsync({ playerId, grade: isActive ? null : opt.key }).catch((e: any) => toast.error(e.message))}
+                      disabled={setGradeMutation.isPending}
+                      className={`flex-1 h-10 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all border ${
+                        isActive
+                          ? `${opt.color} bg-secondary text-foreground`
+                          : "border-transparent bg-secondary/50 text-muted-foreground hover:bg-secondary"
+                      } disabled:opacity-50`}
+                    >
+                      {isActive && <Check className="w-3 h-3" />}
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
         <div className="bg-card rounded-xl p-4 card-elevated">
           <label className="text-sm font-semibold text-foreground block mb-2">Notes</label>
           <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Add evaluation notes..." className="w-full h-20 bg-secondary rounded-lg p-3 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/20" />
