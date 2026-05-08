@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { bootstrapOrganization } from "@/lib/orgBootstrap";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -33,111 +34,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const ensureOrganizationForUser = async (
-    userId: string,
-    displayName: string | null,
-    email: string | null,
-  ): Promise<string | null> => {
-    const { data: existingRole } = await supabase
-      .from("user_roles")
-      .select("organization_id")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-
-    if (existingRole?.organization_id) {
-      return existingRole.organization_id;
-    }
-
-    const baseName =
-      displayName?.trim() ||
-      email?.split("@")[0]?.replace(/[._-]+/g, " ") ||
-      "My Organization";
-    const orgName = `${baseName} Team`;
-    const slugBase = orgName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "");
-    const slug = `${slugBase || "org"}-${userId.slice(0, 8)}`;
-
-    const { data: org, error: orgError } = await supabase
-      .from("organizations")
-      .insert({ name: orgName, slug })
-      .select("id")
-      .single();
-
-    if (orgError || !org) {
-      console.error("Unable to bootstrap organization", orgError);
-      return null;
-    }
-
-    const { error: roleError } = await supabase.from("user_roles").insert({
-      user_id: userId,
-      organization_id: org.id,
-      role: "admin",
-    });
-
-    if (roleError) {
-      console.error("Unable to bootstrap user role", roleError);
-      return null;
-    }
-
-    // Seed default evaluation template
-    await supabase.from("evaluation_templates").insert({
-      name: "Baseball Default",
-      organization_id: org.id,
-      is_default: true,
-      sport: "baseball",
-      categories: [
-        { id: "hitting", name: "Hitting", skills: [
-          { id: "contact", label: "Contact", type: "slider" },
-          { id: "power", label: "Power", type: "slider" },
-          { id: "batSpeed", label: "Bat Speed", type: "slider" },
-          { id: "approach", label: "Approach", type: "slider" },
-          { id: "exitVelo", label: "Exit Velocity", type: "number", unit: "mph" },
-        ]},
-        { id: "fielding", name: "Fielding", skills: [
-          { id: "glovePresentation", label: "Glove Work", type: "slider" },
-          { id: "prepStep", label: "Prep Step", type: "slider" },
-          { id: "hands", label: "Hands", type: "slider" },
-          { id: "footwork", label: "Footwork", type: "slider" },
-          { id: "fieldingOverall", label: "Overall", type: "slider" },
-        ]},
-        { id: "pitching", name: "Pitching", skills: [
-          { id: "command", label: "Command", type: "slider" },
-          { id: "control", label: "Control", type: "slider" },
-          { id: "changeup", label: "Changeup", type: "slider" },
-          { id: "breakingBall", label: "Breaking Ball", type: "slider" },
-          { id: "fbVelo", label: "Fastball Velo", type: "number", unit: "mph" },
-          { id: "changeupVelo", label: "Changeup Velo", type: "number", unit: "mph" },
-          { id: "breakingVelo", label: "Breaking Ball Velo", type: "number", unit: "mph" },
-        ]},
-        { id: "catching", name: "Catching", skills: [
-          { id: "receiving", label: "Receiving", type: "slider" },
-          { id: "transfer", label: "Transfer", type: "slider" },
-          { id: "blocking", label: "Blocking", type: "slider" },
-          { id: "catchingOverall", label: "Overall", type: "slider" },
-          { id: "popTime", label: "Pop Time", type: "number", unit: "sec" },
-        ]},
-        { id: "running", name: "Running", skills: [
-          { id: "lateralSpeed", label: "Lateral Speed", type: "slider" },
-          { id: "homeToFirst", label: "Home to 1st", type: "number", unit: "sec" },
-          { id: "sixtyYard", label: "60-Yard Dash", type: "number", unit: "sec" },
-        ]},
-        { id: "throwing", name: "Throwing", skills: [
-          { id: "armStrength", label: "Arm Strength", type: "slider" },
-          { id: "armAccuracy", label: "Arm Accuracy", type: "slider" },
-          { id: "infieldVelo", label: "IF Throw Velo", type: "number", unit: "mph" },
-          { id: "outfieldVelo", label: "OF Throw Velo", type: "number", unit: "mph" },
-          { id: "catcherVelo", label: "C Throw Velo", type: "number", unit: "mph" },
-        ]},
-      ] as any,
-    });
-
-    return org.id;
-  };
-
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
@@ -153,10 +49,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               .maybeSingle();
 
             const displayName = prof?.display_name ?? (session.user.user_metadata?.full_name as string | undefined) ?? null;
+            const pendingOrgName = (session.user.user_metadata?.pending_org_name as string | undefined) ?? null;
             let orgId = prof?.current_organization_id ?? null;
 
             if (!orgId) {
-              orgId = await ensureOrganizationForUser(session.user.id, displayName, session.user.email ?? null);
+              orgId = await bootstrapOrganization({
+                userId: session.user.id,
+                orgName: pendingOrgName,
+                displayName,
+                email: session.user.email ?? null,
+              });
             }
 
             if (orgId) {

@@ -49,20 +49,12 @@ export function useSaveEvaluation() {
   return useMutation({
     mutationFn: async ({ playerId, scores, notes }: { playerId: string; scores: Record<string, number>; notes: string }) => {
       if (!organizationId || !user) throw new Error("Not authenticated");
-      const { data, error } = await supabase
-        .from("evaluations")
-        .upsert(
-          {
-            player_id: playerId,
-            coach_id: user.id,
-            organization_id: organizationId,
-            scores: scores as any,
-            notes,
-          },
-          { onConflict: "player_id,coach_id,event_id" }
-        )
-        .select()
-        .single();
+      const { data, error } = await supabase.rpc("upsert_evaluation", {
+        p_player_id: playerId,
+        p_organization_id: organizationId,
+        p_scores: scores as never,
+        p_notes: notes,
+      });
       if (error) throw error;
       return data;
     },

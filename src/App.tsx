@@ -14,6 +14,7 @@ import Leaderboard from "./pages/Leaderboard";
 import ManageTemplate from "./pages/ManageTemplate";
 import TeamBuilder from "./pages/TeamBuilder";
 import Auth from "./pages/Auth";
+import AuthRecover from "./pages/AuthRecover";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ function AuthRoute({ children }: { children: React.ReactNode }) {
 const AppRoutes = () => (
   <Routes>
     <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
+    <Route path="/auth/recover" element={<AuthRecover />} />
     <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
     <Route path="/players" element={<ProtectedRoute><Players /></ProtectedRoute>} />
     <Route path="/players/add" element={<ProtectedRoute><AddPlayer /></ProtectedRoute>} />
