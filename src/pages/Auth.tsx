@@ -94,10 +94,7 @@ export default function Auth() {
         className="w-full max-w-sm"
       >
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-4">
-            <span className="text-primary-foreground font-bold text-xl">DA</span>
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">DiamondAudit</h1>
+          <img src="/logo.png" alt="DiamondAudit" className="w-32 h-32 mx-auto mb-2 object-contain" />
           <p className="text-sm text-muted-foreground mt-1">{subhead}</p>
         </div>
 
