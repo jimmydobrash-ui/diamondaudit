@@ -31,6 +31,12 @@ export default function EvaluatePlayer() {
   const [initialized, setInitialized] = useState(false);
 
   const categories = template?.categories ?? [];
+  const visibleCategories = (() => {
+    const positions = player?.positions ?? [];
+    if (positions.length === 0) return categories;
+    if (positions.includes("C")) return categories;
+    return categories.filter(cat => cat.id !== "catching");
+  })();
 
   // Initialize scores from existing evaluation or defaults
   useEffect(() => {
@@ -107,7 +113,7 @@ export default function EvaluatePlayer() {
     );
   }
 
-  const currentCategory = categories[activeCategory];
+  const currentCategory = visibleCategories[activeCategory];
   const playerIndex = players.findIndex(p => p.id === playerId);
   const prevPlayer = playerIndex > 0 ? players[playerIndex - 1] : null;
   const nextPlayer = playerIndex < players.length - 1 ? players[playerIndex + 1] : null;
@@ -136,7 +142,7 @@ export default function EvaluatePlayer() {
         </motion.div>
 
         <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
-          {categories.map((cat, i) => (
+          {visibleCategories.map((cat, i) => (
             <button key={cat.id} onClick={() => setActiveCategory(i)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${activeCategory === i ? "bg-foreground text-background" : "bg-secondary text-muted-foreground"}`}
             >{cat.name}</button>
