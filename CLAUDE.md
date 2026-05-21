@@ -36,12 +36,21 @@
 
 ---
 
+## Deployment
+
+- **Production**: [diamondaudit.io](https://diamondaudit.io) (root + `www`) — Cloudflare DNS pointing to Vercel.
+- **Hosting**: Vercel static build from `main`. `vercel.json` rewrites all paths to `/index.html` so React Router handles deep links (password reset, future invite URLs, direct navigation). Static assets under `dist/` are served before the rewrite.
+- **Supabase Auth URL config**: Site URL and additional redirect URLs are set for `https://diamondaudit.io` so password reset / signup confirmation emails point to production, not localhost.
+
+---
+
 ## Repo layout
 
 ```
 diamondaudit/
-├── index.html                   — single-page entry, has Lovable meta tags
-├── vite.config.ts               — port 8080, @ alias to ./src, includes lovable-tagger
+├── index.html                   — single-page entry
+├── vercel.json                  — SPA rewrite: all paths → /index.html
+├── vite.config.ts               — port 8080, @ alias to ./src
 ├── tailwind.config.ts           — shadcn HSL CSS vars + custom success/warning/info
 ├── components.json              — shadcn config (slate base, css vars, @/components alias)
 ├── eslint.config.js             — flat config, react-hooks + react-refresh
@@ -106,7 +115,7 @@ All tables have RLS enabled. Org isolation is enforced through SECURITY DEFINER 
 | `evaluation_templates` | per-org skill template | `categories` JSONB; one `is_default = true` per org |
 | `evaluations` | per-coach scores | `(player_id, coach_id, event_id)` unique; `scores` JSONB; `notes` |
 | `player_grades` | per-coach Offer/Bubble/Pass | `(player_id, coach_id)` unique; grade enum: `offer` \| `bubble` \| `pass` |
-| `organization_invites` | coach invite system | `email`, `role`, `status`, `expires_at` (default 7d) |
+| `organization_invites` | coach invite system (in-app only — see below) | `email`, `role`, `status`, `expires_at` (default 7d) |
 
 **RLS rules of thumb:**
 - Members can `SELECT` anything in their org.
@@ -134,6 +143,26 @@ All tables have RLS enabled. Org isolation is enforced through SECURITY DEFINER 
 [`Auth.tsx`](src/pages/Auth.tsx) handles signin/signup/forgot. On signup it stashes the user-chosen org name in `user_metadata.pending_org_name`; `bootstrapOrganization` reads it back when creating the org. On password reset, the user is redirected to `/auth/recover` which calls `supabase.auth.updateUser({ password })`.
 
 `bootstrapOrganization` generates the org UUID client-side so the insert doesn't need a `.select()` (which would fail RLS — at the moment of insert, the user isn't yet a member of the org they just created). This is the correct pattern; don't revert to `.insert(...).select()`.
+
+---
+
+## Invites (no email yet)
+
+The coach invite system is **in-app only**. `InviteCoachDialog` inserts a row into `organization_invites`; nothing is emailed. No Resend integration, no Supabase Edge Functions (`supabase/functions/` doesn't exist), no email-related env vars. The "Invite sent to {email}" toast is misleading.
+
+A recipient only learns about an invite if they happen to sign up or log in with the invited email — at which point [`PendingInviteBanner`](src/components/PendingInviteBanner.tsx) polls the table (email match, case-insensitive) and lets them accept. New signups always create a fresh org via `bootstrapOrganization`, so an invited-but-not-yet-registered user ends up in *their own* org and would have to accept the banner to join the inviter's org (ending up in both).
+
+Planned fix: shareable copy-link UX from the dialog + Auth-page handling for `?invite=1&email=...`. Not implemented yet.
+
+---
+
+## Evaluations: catcher rule
+
+[`EvaluatePlayer.tsx`](src/pages/EvaluatePlayer.tsx) hides the `id === "catching"` template category when the player's `positions[]` is set and does *not* include `"C"`. Empty/null `positions[]` shows all categories.
+
+- The hide is **UI-only**. The init effect still walks the full template, so any existing catcher scores survive the `upsert_evaluation` RPC (which does a full `scores = EXCLUDED.scores` replace, not a JSONB merge).
+- Side effect: non-catchers no longer save phantom default-`5` catcher slider values, so their leaderboard overalls reflect only categories they were actually evaluated on.
+- Hardcoded to the seeded `"catching"` id. If an org deletes/recreates the catcher category with a different id, the rule won't apply.
 
 ---
 
@@ -210,11 +239,15 @@ All removed: `lovable-tagger` (config + dependency), broken Playwright config (r
 
 ---
 
-## Things to verify before continuing development
+## Verified working on production
 
-- [ ] `npm install` succeeds (root deps look clean).
-- [ ] `npm run dev` boots at http://localhost:8080 and the auth screen renders.
-- [ ] Sign-in works against the existing Supabase project (`spklyeogyuoulcpgysme`).
-- [ ] Decide: keep the existing Supabase project, or fork it under your own account?
-  - If keeping: you only need to confirm you have access to the Supabase dashboard.
-  - If forking: create a new Supabase project, run the 5 migrations in order, regenerate `src/integrations/supabase/types.ts`, update `.env`.
+- Custom domain `diamondaudit.io` (root + `www`) resolves to the Vercel deployment.
+- Deep links (e.g. `/players`, `/auth/recover`) load via the SPA rewrite — no Vercel 404.
+- Password reset flow: request from `/auth` → email arrives → link lands on `/auth/recover` → password update succeeds → sign-in works.
+- Catcher-category hide rule live in `EvaluatePlayer`.
+
+## Known gaps
+
+- Invite emails are not implemented (see "Invites" section above).
+- Playwright config still references a Lovable-only package; e2e suite doesn't run.
+- Generic placeholder favicon.
