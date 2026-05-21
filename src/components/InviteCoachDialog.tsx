@@ -2,7 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { X, Send, UserPlus } from "lucide-react";
+import { X, Send, UserPlus, Copy, Check } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -13,19 +13,34 @@ export default function InviteCoachDialog({ open, onClose }: Props) {
   const { user, organizationId } = useAuth();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   if (!open) return null;
+
+  const reset = () => {
+    setEmail("");
+    setInviteLink(null);
+    setCopied(false);
+  };
+
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !organizationId) return;
     setLoading(true);
 
+    const cleanEmail = email.trim().toLowerCase();
+
     try {
       const { error } = await supabase.from("organization_invites").insert({
         organization_id: organizationId,
         invited_by: user.id,
-        email: email.trim().toLowerCase(),
+        email: cleanEmail,
         role: "coach" as const,
       });
 
@@ -36,14 +51,25 @@ export default function InviteCoachDialog({ open, onClose }: Props) {
           throw error;
         }
       } else {
-        toast.success(`Invite sent to ${email}`);
-        setEmail("");
-        onClose();
+        const link = `${window.location.origin}/auth?invite=1&email=${encodeURIComponent(cleanEmail)}`;
+        setInviteLink(link);
+        toast.success("Invite created — share the link with the coach.");
       }
     } catch (err: any) {
       toast.error(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!inviteLink) return;
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Couldn't copy to clipboard");
     }
   };
 
@@ -55,33 +81,66 @@ export default function InviteCoachDialog({ open, onClose }: Props) {
             <UserPlus className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-bold text-foreground">Invite Coach</h2>
           </div>
-          <button onClick={onClose} className="p-1 text-muted-foreground hover:text-foreground">
+          <button onClick={handleClose} className="p-1 text-muted-foreground hover:text-foreground">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <p className="text-sm text-muted-foreground">
-          Send an invite to a coach's email. When they sign up or log in, they'll be able to join your organization.
-        </p>
-
-        <form onSubmit={handleInvite} className="space-y-3">
-          <input
-            type="email"
-            placeholder="coach@example.com"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-            className="w-full h-12 px-4 rounded-xl bg-secondary text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            <Send className="w-4 h-4" />
-            {loading ? "Sending..." : "Send Invite"}
-          </button>
-        </form>
+        {inviteLink ? (
+          <>
+            <p className="text-sm text-muted-foreground">
+              Send this link to <strong className="text-foreground">{email}</strong>. They'll be added to your organization after signing up or logging in.
+            </p>
+            <div className="flex items-center gap-2 p-2 rounded-xl bg-secondary">
+              <input
+                type="text"
+                readOnly
+                value={inviteLink}
+                onClick={e => (e.target as HTMLInputElement).select()}
+                className="flex-1 bg-transparent text-xs text-foreground focus:outline-none px-2"
+              />
+              <button
+                onClick={handleCopy}
+                className={`h-9 px-3 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors ${
+                  copied ? "bg-success text-success-foreground" : "bg-primary text-primary-foreground"
+                }`}
+              >
+                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? "Copied" : "Copy"}
+              </button>
+            </div>
+            <button
+              onClick={reset}
+              className="w-full h-10 rounded-xl bg-secondary text-foreground text-sm font-medium hover:bg-secondary/70 transition-colors"
+            >
+              Invite another coach
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground">
+              Enter a coach's email to create an invite link you can share with them.
+            </p>
+            <form onSubmit={handleInvite} className="space-y-3">
+              <input
+                type="email"
+                placeholder="coach@example.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                className="w-full h-12 px-4 rounded-xl bg-secondary text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                <Send className="w-4 h-4" />
+                {loading ? "Creating..." : "Create Invite Link"}
+              </button>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );

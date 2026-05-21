@@ -22,7 +22,8 @@ export default function PendingInviteBanner() {
         .from("organization_invites")
         .select("id, organization_id, role")
         .eq("status", "pending")
-        .ilike("email", user.email!);
+        .ilike("email", user.email!)
+        .gt("expires_at", new Date().toISOString());
 
       if (!data?.length) return;
 

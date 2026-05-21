@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -7,8 +8,12 @@ import { Mail, Lock, UserPlus, LogIn, ArrowLeft, Send } from "lucide-react";
 type Mode = "signin" | "signup" | "forgot" | "confirmation-sent" | "reset-sent";
 
 export default function Auth() {
-  const [mode, setMode] = useState<Mode>("signin");
-  const [email, setEmail] = useState("");
+  const [searchParams] = useSearchParams();
+  const isInvite = searchParams.get("invite") === "1";
+  const invitedEmail = searchParams.get("email") ?? "";
+
+  const [mode, setMode] = useState<Mode>(isInvite ? "signup" : "signin");
+  const [email, setEmail] = useState(invitedEmail);
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [orgName, setOrgName] = useState("");
@@ -20,13 +25,14 @@ export default function Auth() {
 
     try {
       if (mode === "signup") {
+        const trimmedOrgName = orgName.trim();
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: {
               full_name: fullName,
-              pending_org_name: orgName.trim(),
+              ...(isInvite ? {} : { pending_org_name: trimmedOrgName }),
             },
             emailRedirectTo: window.location.origin,
           },
@@ -81,7 +87,9 @@ export default function Auth() {
 
   const subhead =
     mode === "signup"
-      ? "Create your organization"
+      ? isInvite
+        ? "Accept your invite"
+        : "Create your organization"
       : mode === "forgot"
       ? "Enter your email to reset your password"
       : "Sign in to continue";
@@ -98,6 +106,12 @@ export default function Auth() {
           <p className="text-sm text-muted-foreground mt-1">{subhead}</p>
         </div>
 
+        {mode === "signup" && isInvite && (
+          <div className="mb-3 p-3 rounded-xl bg-primary/10 border border-primary/20 text-xs text-foreground">
+            You've been invited to join an organization. Sign up to accept.
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-3">
           {mode === "signup" && (
             <>
@@ -112,16 +126,18 @@ export default function Auth() {
                   className="w-full h-12 pl-10 pr-4 rounded-xl bg-secondary text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Organization name (e.g., Eastside Baseball)"
-                  value={orgName}
-                  onChange={e => setOrgName(e.target.value)}
-                  required
-                  className="w-full h-12 px-4 rounded-xl bg-secondary text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
+              {!isInvite && (
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Organization name (e.g., Eastside Baseball)"
+                    value={orgName}
+                    onChange={e => setOrgName(e.target.value)}
+                    required
+                    className="w-full h-12 px-4 rounded-xl bg-secondary text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+              )}
             </>
           )}
 

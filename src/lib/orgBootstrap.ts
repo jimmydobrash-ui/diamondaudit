@@ -103,6 +103,25 @@ export async function bootstrapOrganization({
   }
 
   const trimmedOrgName = orgName?.trim();
+
+  // If signing up without an org name AND a pending invite exists for this
+  // email, skip auto-creating an org — PendingInviteBanner will let the user
+  // accept the invite into the inviter's org.
+  if (!trimmedOrgName && email) {
+    const { data: pendingInvite } = await supabase
+      .from("organization_invites")
+      .select("id")
+      .eq("status", "pending")
+      .ilike("email", email)
+      .gt("expires_at", new Date().toISOString())
+      .limit(1)
+      .maybeSingle();
+
+    if (pendingInvite) {
+      return null;
+    }
+  }
+
   const baseName =
     trimmedOrgName ||
     displayName?.trim() ||
