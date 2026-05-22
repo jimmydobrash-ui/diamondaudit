@@ -156,6 +156,32 @@ Planned fix: shareable copy-link UX from the dialog + Auth-page handling for `?i
 
 ---
 
+## Scoring rubric
+
+All slider scores reflect skill level relative to organized baseball competition.
+
+| Score | Tier | Meaning |
+|---|---|---|
+| 10 | Unicorn | Will excel at Major league level |
+| 9 | Elite | Will compete at Major league level |
+| 7-8 | Above Average | Will excel at AAA level; potential to play Major |
+| 5-6 | Average | Will compete at AAA level |
+| 3-4 | Below Average | Will compete at AA competition level |
+| 1-2 | Needs significant work | Not yet at AA/AAA competition level |
+
+**Notes for coaches:**
+
+- Sliders start at zero. Only score what you actually observed. Skipping is better than guessing.
+- Player position and age display at the top of each eval. Calibrate against age and league expectations.
+- If two coaches score the same player very differently, that's useful information — discuss before final team decisions.
+
+**Slider behavior:**
+
+- 1-8: 0.5 increments allowed
+- 9-10: whole numbers only
+
+---
+
 ## Evaluations: catcher rule
 
 [`EvaluatePlayer.tsx`](src/pages/EvaluatePlayer.tsx) hides the `id === "catching"` template category when the player's `positions[]` is set and does *not* include `"C"`. Empty/null `positions[]` shows all categories.
