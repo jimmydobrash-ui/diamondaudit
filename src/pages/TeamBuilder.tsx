@@ -8,7 +8,7 @@ import { useMyPlayerGrades, useSetPlayerGrade, type PlayerGradeValue } from "@/h
 import { useEvaluations } from "@/hooks/useEvaluations";
 import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
 import { getAgeGroup } from "@/lib/mock-data";
-import { calcSliderOverall } from "@/lib/scoring";
+import { calcSliderOverall, aggregateScoresByPlayer } from "@/lib/scoring";
 import OverallScore from "@/components/OverallScore";
 import { Layers, ChevronRight, Check } from "lucide-react";
 import { toast } from "sonner";
@@ -35,12 +35,15 @@ export default function TeamBuilder() {
   }, [grades]);
 
   const playerScores = useMemo(() => {
-    const map: Record<string, number> = {};
-    evaluations.forEach(ev => {
-      const avg = calcSliderOverall(ev.scores as Record<string, number>, categories);
-      if (avg > 0) map[ev.player_id] = avg;
-    });
-    return map;
+    const aggregates = aggregateScoresByPlayer(
+      evaluations.map(ev => ({ player_id: ev.player_id, scores: ev.scores as Record<string, number> })),
+    );
+    const out: Record<string, number> = {};
+    for (const [pid, scores] of Object.entries(aggregates)) {
+      const overall = calcSliderOverall(scores, categories);
+      if (overall > 0) out[pid] = overall;
+    }
+    return out;
   }, [evaluations, categories]);
 
   const grouped = useMemo(() => {

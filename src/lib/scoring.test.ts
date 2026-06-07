@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  calcFlatOverall,
+  aggregateScoresByPlayer,
   calcSliderOverall,
   calcCategoryAvg,
   visibleEvalCategories,
@@ -27,21 +27,60 @@ const categories: TemplateCategory[] = [
   },
 ];
 
-describe("calcFlatOverall", () => {
-  it("averages every value regardless of skill type", () => {
-    // (8 + 6 + 90) / 3 = 34.666... -> 34.7
-    expect(calcFlatOverall({ contact: 8, power: 6, exitVelo: 90 })).toBe(34.7);
+describe("aggregateScoresByPlayer", () => {
+  it("averages each skill across evaluations (per-skill, rounded to 1 dp)", () => {
+    const result = aggregateScoresByPlayer([
+      { player_id: "p1", scores: { contact: 8, power: 6 } },
+      { player_id: "p1", scores: { contact: 7, power: 7 } },
+    ]);
+    // contact (8+7)/2 = 7.5, power (6+7)/2 = 6.5
+    expect(result.p1).toEqual({ contact: 7.5, power: 6.5 });
   });
 
-  it("rounds to one decimal place", () => {
-    // (7 + 8) / 2 = 7.5
-    expect(calcFlatOverall({ a: 7, b: 8 })).toBe(7.5);
-    // (7 + 8 + 8) / 3 = 7.666... -> 7.7
-    expect(calcFlatOverall({ a: 7, b: 8, c: 8 })).toBe(7.7);
+  it("returns a single evaluation's scores unchanged (one coach)", () => {
+    const result = aggregateScoresByPlayer([
+      { player_id: "p1", scores: { contact: 8, power: 6, exitVelo: 90 } },
+    ]);
+    expect(result.p1).toEqual({ contact: 8, power: 6, exitVelo: 90 });
   });
 
-  it("returns 0 for empty scores", () => {
-    expect(calcFlatOverall({})).toBe(0);
+  it("averages a skill only over the evaluations that scored it", () => {
+    const result = aggregateScoresByPlayer([
+      { player_id: "p1", scores: { contact: 8 } },
+      { player_id: "p1", scores: { contact: 6, power: 9 } },
+    ]);
+    // contact (8+6)/2 = 7; power only scored once -> 9
+    expect(result.p1).toEqual({ contact: 7, power: 9 });
+  });
+
+  it("buckets players separately", () => {
+    const result = aggregateScoresByPlayer([
+      { player_id: "p1", scores: { contact: 8 } },
+      { player_id: "p2", scores: { contact: 4 } },
+    ]);
+    expect(result).toEqual({ p1: { contact: 8 }, p2: { contact: 4 } });
+  });
+
+  it("ignores null/undefined skill values", () => {
+    const result = aggregateScoresByPlayer([
+      { player_id: "p1", scores: { contact: 8, power: null as unknown as number } },
+      { player_id: "p1", scores: { contact: 6 } },
+    ]);
+    expect(result.p1).toEqual({ contact: 7 });
+  });
+
+  it("returns an empty object for no evaluations", () => {
+    expect(aggregateScoresByPlayer([])).toEqual({});
+  });
+
+  it("feeds calcSliderOverall so multi-coach overalls are consistent", () => {
+    // Two coaches: aggregate per-skill first, then slider overall.
+    const agg = aggregateScoresByPlayer([
+      { player_id: "p1", scores: { contact: 8, power: 6, exitVelo: 90 } },
+      { player_id: "p1", scores: { contact: 6, power: 8, exitVelo: 80 } },
+    ]);
+    // aggregated sliders: contact 7, power 7 -> overall (7+7)/2 = 7 (exitVelo excluded)
+    expect(calcSliderOverall(agg.p1, categories)).toBe(7);
   });
 });
 

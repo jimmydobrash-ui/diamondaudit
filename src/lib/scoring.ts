@@ -8,15 +8,34 @@ function round1(n: number): number {
 }
 
 /**
- * Flat average of every score value, regardless of skill type.
- * Used by the evaluate list and team builder for a quick "overall" number.
- * Note: this includes number-type skills (e.g. velocity in mph), so it is a
- * rough indicator, not the calibrated leaderboard overall.
+ * Roll up multiple evaluations of the same players (e.g. from different coaches)
+ * into one per-skill score map per player, averaging each skill across the
+ * evaluations that scored it (rounded to one decimal). This is the canonical
+ * cross-coach aggregation: build a composite per-skill profile first, then feed
+ * it to calcSliderOverall / calcCategoryAvg. Every screen uses this so the same
+ * player reads the same overall regardless of how many coaches scored them.
  */
-export function calcFlatOverall(scores: Scores): number {
-  const vals = Object.values(scores);
-  if (!vals.length) return 0;
-  return round1(vals.reduce((a, b) => a + b, 0) / vals.length);
+export function aggregateScoresByPlayer(
+  evaluations: { player_id: string; scores: Scores }[],
+): Record<string, Scores> {
+  const buckets: Record<string, { sums: Scores; counts: Record<string, number> }> = {};
+  for (const ev of evaluations) {
+    const bucket = (buckets[ev.player_id] ??= { sums: {}, counts: {} });
+    for (const [skill, value] of Object.entries(ev.scores ?? {})) {
+      if (value === null || value === undefined) continue;
+      bucket.sums[skill] = (bucket.sums[skill] ?? 0) + value;
+      bucket.counts[skill] = (bucket.counts[skill] ?? 0) + 1;
+    }
+  }
+  const result: Record<string, Scores> = {};
+  for (const [playerId, bucket] of Object.entries(buckets)) {
+    const aggregated: Scores = {};
+    for (const skill of Object.keys(bucket.sums)) {
+      aggregated[skill] = round1(bucket.sums[skill] / bucket.counts[skill]);
+    }
+    result[playerId] = aggregated;
+  }
+  return result;
 }
 
 /**
