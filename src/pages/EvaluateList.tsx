@@ -8,12 +8,7 @@ import { ClipboardList, ChevronRight } from "lucide-react";
 import { useMemo } from "react";
 import { useMyPlayerGrades, type PlayerGradeValue } from "@/hooks/usePlayerGrades";
 import GradeBadge from "@/components/GradeBadge";
-
-function calcOverall(scores: Record<string, number>): number {
-  const vals = Object.values(scores);
-  if (!vals.length) return 0;
-  return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
-}
+import { calcFlatOverall } from "@/lib/scoring";
 
 export default function EvaluateList() {
   const { data: players = [], isLoading } = usePlayers();
@@ -29,7 +24,7 @@ export default function EvaluateList() {
   const playerScores = useMemo(() => {
     const map: Record<string, number[]> = {};
     evaluations.forEach(ev => {
-      const avg = calcOverall(ev.scores as Record<string, number>);
+      const avg = calcFlatOverall(ev.scores as Record<string, number>);
       if (avg > 0) {
         if (!map[ev.player_id]) map[ev.player_id] = [];
         map[ev.player_id].push(avg);

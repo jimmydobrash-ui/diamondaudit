@@ -4,28 +4,10 @@ import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useEvaluations } from "@/hooks/useEvaluations";
-import { useEvaluationTemplate, TemplateCategory } from "@/hooks/useEvaluationTemplate";
+import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
 import { getAgeGroup } from "@/lib/mock-data";
+import { calcSliderOverall, calcCategoryAvg } from "@/lib/scoring";
 import { BarChart3, Trophy } from "lucide-react";
-
-function calcOverall(scores: Record<string, number>, categories: TemplateCategory[]): number {
-  // Only average slider-type skills for overall score
-  const sliderIds = new Set(
-    categories.flatMap(c => c.skills.filter(s => s.type === "slider").map(s => s.id))
-  );
-  const vals = Object.entries(scores)
-    .filter(([k]) => sliderIds.has(k))
-    .map(([, v]) => v);
-  if (!vals.length) return 0;
-  return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
-}
-
-function calcCategoryAvg(scores: Record<string, number>, category: TemplateCategory): number | null {
-  const sliderSkills = category.skills.filter(s => s.type === "slider");
-  const vals = sliderSkills.map(s => scores[s.id]).filter((v): v is number => v !== undefined);
-  if (!vals.length) return null;
-  return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
-}
 
 export default function Leaderboard() {
   const [sortBy, setSortBy] = useState("overall");
@@ -67,7 +49,7 @@ export default function Leaderboard() {
         const scores = playerAggregates[p.id] ?? {};
         return {
           player: p,
-          overall: calcOverall(scores, categories),
+          overall: calcSliderOverall(scores, categories),
           scores,
           categoryScores: categories.map(cat => ({ category: cat.name, id: cat.id, avg: calcCategoryAvg(scores, cat) })),
         };

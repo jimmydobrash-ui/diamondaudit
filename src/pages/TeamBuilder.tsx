@@ -7,6 +7,7 @@ import { usePlayers } from "@/hooks/usePlayers";
 import { useMyPlayerGrades, useSetPlayerGrade, type PlayerGradeValue } from "@/hooks/usePlayerGrades";
 import { useEvaluations } from "@/hooks/useEvaluations";
 import { getAgeGroup } from "@/lib/mock-data";
+import { calcFlatOverall } from "@/lib/scoring";
 import { Layers, ChevronRight, Check } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,12 +16,6 @@ const COLUMNS: { key: PlayerGradeValue; label: string; color: string }[] = [
   { key: "bubble", label: "Bubble", color: "border-amber-500/40" },
   { key: "pass", label: "Pass", color: "border-red-500/40" },
 ];
-
-function calcOverall(scores: Record<string, number>): number {
-  const vals = Object.values(scores);
-  if (!vals.length) return 0;
-  return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
-}
 
 export default function TeamBuilder() {
   const { data: players = [], isLoading } = usePlayers();
@@ -38,7 +33,7 @@ export default function TeamBuilder() {
   const playerScores = useMemo(() => {
     const map: Record<string, number> = {};
     evaluations.forEach(ev => {
-      const avg = calcOverall(ev.scores as Record<string, number>);
+      const avg = calcFlatOverall(ev.scores as Record<string, number>);
       if (avg > 0) map[ev.player_id] = avg;
     });
     return map;
