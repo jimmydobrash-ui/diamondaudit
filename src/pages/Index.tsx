@@ -98,7 +98,7 @@ export default function Index() {
                       <span className="text-sm font-semibold text-foreground truncate block">{player.first_name} {player.last_name}</span>
                       <span className="text-xs text-muted-foreground">{getAgeGroup(player.date_of_birth)} · {player.positions.join(", ")}</span>
                     </div>
-                    <OverallScore value={playerScores[player.id]} className="text-lg font-bold text-primary" />
+                    <OverallScore value={playerScores[player.id]} showTier className="text-lg font-bold text-primary" />
                   </Link>
                 </motion.div>
               ))}

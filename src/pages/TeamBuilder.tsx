@@ -137,7 +137,7 @@ export default function TeamBuilder() {
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {score && (
-                        <OverallScore value={score} className={`text-lg font-bold ${score >= 8 ? "text-primary" : "text-foreground"}`} />
+                        <OverallScore value={score} showTier className={`text-lg font-bold ${score >= 8 ? "text-primary" : "text-foreground"}`} />
                       )}
                       <Link to={`/evaluate/${player.id}`} className="text-muted-foreground hover:text-foreground">
                         <ChevronRight className="w-4 h-4" />

@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import AppLayout from "@/components/AppLayout";
 import EvaluationSlider from "@/components/EvaluationSlider";
 import EvaluationNumberInput from "@/components/EvaluationNumberInput";
+import ScoringRuler from "@/components/ScoringRuler";
 import { getAgeGroup } from "@/lib/mock-data";
 import { visibleEvalCategories } from "@/lib/scoring";
 import { usePlayers } from "@/hooks/usePlayers";
@@ -148,6 +149,7 @@ export default function EvaluatePlayer() {
         {currentCategory && (
           <motion.div key={currentCategory.id} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2 }} className="space-y-1 bg-card rounded-xl p-4 card-elevated">
             <h2 className="text-sm font-semibold text-foreground mb-3">{currentCategory.name}</h2>
+            {currentCategory.skills.some(skill => skill.type === "slider") && <ScoringRuler />}
             {currentCategory.skills.map(skill =>
               skill.type === "number" ? (
                 <EvaluationNumberInput

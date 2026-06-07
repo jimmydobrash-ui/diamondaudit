@@ -2,6 +2,45 @@ import type { TemplateCategory } from "@/hooks/useEvaluationTemplate";
 
 type Scores = Record<string, number>;
 
+export interface ScoreTier {
+  /** Authored score range as shown in the rubric, e.g. "7–8". */
+  range: string;
+  /** Full tier name, e.g. "Above Average". */
+  label: string;
+  /** Competition level this tier maps to, e.g. "AAA". */
+  league: string;
+  /** One-line meaning for the scoring guide. */
+  meaning: string;
+  /** Compact label for the inline tier tag next to an overall, e.g. "Above Avg (AAA)". */
+  badge: string;
+  /** Inclusive lower bound used to map a continuous overall (0-10) to a tier. */
+  min: number;
+}
+
+/**
+ * The grading rubric — single source of truth for both the Scoring Guide page
+ * and the inline tier tag on a player's overall. Ordered highest tier first.
+ * Mirrors the rubric in CLAUDE.md.
+ */
+export const SCORE_TIERS: ScoreTier[] = [
+  { range: "10", label: "Unicorn", league: "MLB", meaning: "Will excel at Major League level", badge: "Unicorn (MLB)", min: 9.5 },
+  { range: "9", label: "Elite", league: "MLB", meaning: "Will compete at Major League level", badge: "Elite (MLB)", min: 9 },
+  { range: "7–8", label: "Above Average", league: "AAA", meaning: "Will excel at AAA; potential to play Major", badge: "Above Avg (AAA)", min: 7 },
+  { range: "5–6", label: "Average", league: "AAA", meaning: "Will compete at AAA", badge: "Average (AAA)", min: 5 },
+  { range: "3–4", label: "Below Average", league: "AA", meaning: "Will compete at AA competition level", badge: "Below Avg (AA)", min: 3 },
+  { range: "1–2", label: "Needs significant work", league: "—", meaning: "Not yet at AA/AAA competition level", badge: "Needs work", min: 0.0001 },
+];
+
+/**
+ * Map a continuous overall (0-10) to its rubric tier, or null when there's no
+ * score (0). Overalls are averages, so they fall between the authored whole-
+ * number tiers; the lower-bound bands keep them aligned with the rubric.
+ */
+export function scoreTier(value: number): ScoreTier | null {
+  if (value <= 0) return null;
+  return SCORE_TIERS.find(t => value >= t.min) ?? null;
+}
+
 /** Round to one decimal place (e.g. 7.25 -> 7.3). */
 function round1(n: number): number {
   return Math.round(n * 10) / 10;
