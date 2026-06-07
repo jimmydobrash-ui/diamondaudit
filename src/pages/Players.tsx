@@ -6,7 +6,7 @@ import { usePlayers } from "@/hooks/usePlayers";
 import { useEvaluations } from "@/hooks/useEvaluations";
 import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
 import { getAgeGroup } from "@/lib/mock-data";
-import { calcSliderOverall } from "@/lib/scoring";
+import { calcSliderOverall, aggregateScoresByPlayer } from "@/lib/scoring";
 import { useAuth } from "@/hooks/useAuth";
 import OverallScore from "@/components/OverallScore";
 import { Search, Plus, Upload, ChevronRight } from "lucide-react";
@@ -21,17 +21,15 @@ export default function Players() {
   const categories = useMemo(() => template?.categories ?? [], [template]);
 
   const playerScores = useMemo(() => {
-    const map: Record<string, number[]> = {};
-    evaluations.forEach(ev => {
-      const avg = calcSliderOverall(ev.scores as Record<string, number>, categories);
-      if (avg > 0) {
-        if (!map[ev.player_id]) map[ev.player_id] = [];
-        map[ev.player_id].push(avg);
-      }
-    });
-    return Object.fromEntries(
-      Object.entries(map).map(([id, vals]) => [id, Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10])
+    const aggregates = aggregateScoresByPlayer(
+      evaluations.map(ev => ({ player_id: ev.player_id, scores: ev.scores as Record<string, number> })),
     );
+    const out: Record<string, number> = {};
+    for (const [pid, scores] of Object.entries(aggregates)) {
+      const overall = calcSliderOverall(scores, categories);
+      if (overall > 0) out[pid] = overall;
+    }
+    return out;
   }, [evaluations, categories]);
 
   const ageGroups = useMemo(() => {

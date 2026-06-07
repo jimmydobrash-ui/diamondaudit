@@ -6,7 +6,7 @@ import { usePlayers } from "@/hooks/usePlayers";
 import { useEvaluations } from "@/hooks/useEvaluations";
 import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
 import { getAgeGroup } from "@/lib/mock-data";
-import { calcSliderOverall, calcCategoryAvg } from "@/lib/scoring";
+import { calcSliderOverall, calcCategoryAvg, aggregateScoresByPlayer } from "@/lib/scoring";
 import OverallScore from "@/components/OverallScore";
 import { BarChart3, Trophy } from "lucide-react";
 
@@ -19,23 +19,10 @@ export default function Leaderboard() {
 
   const categories = template?.categories ?? [];
 
-  const playerAggregates = useMemo(() => {
-    const map: Record<string, Record<string, number[]>> = {};
-    evaluations.forEach(ev => {
-      const scores = ev.scores as Record<string, number>;
-      if (!map[ev.player_id]) map[ev.player_id] = {};
-      Object.entries(scores).forEach(([key, val]) => {
-        if (!map[ev.player_id][key]) map[ev.player_id][key] = [];
-        map[ev.player_id][key].push(val);
-      });
-    });
-    return Object.fromEntries(
-      Object.entries(map).map(([pid, skills]) => [
-        pid,
-        Object.fromEntries(Object.entries(skills).map(([k, vals]) => [k, Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10]))
-      ])
-    );
-  }, [evaluations]);
+  const playerAggregates = useMemo(
+    () => aggregateScoresByPlayer(evaluations.map(ev => ({ player_id: ev.player_id, scores: ev.scores as Record<string, number> }))),
+    [evaluations],
+  );
 
   const ageGroups = useMemo(() => {
     return [...new Set(players.map(p => getAgeGroup(p.date_of_birth)))].sort();
