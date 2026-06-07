@@ -58,8 +58,8 @@ export default function TeamBuilder() {
   const handleGrade = async (playerId: string, grade: PlayerGradeValue | null) => {
     try {
       await setGrade.mutateAsync({ playerId, grade });
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
     }
   };
 

@@ -56,8 +56,8 @@ export default function AddPlayer() {
       });
       toast.success("Player added!");
       navigate("/players");
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
     }
   };
 

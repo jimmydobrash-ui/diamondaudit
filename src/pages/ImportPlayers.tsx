@@ -72,7 +72,7 @@ function parseCSV(text: string): { players: ParsedPlayer[]; errors: string[] } {
 
     const bats = get("bats").toUpperCase();
     const throws_ = get("throws").toUpperCase();
-    const positions = get("positions").split(/[\/;|]/).map(p => p.trim().toUpperCase()).filter(Boolean);
+    const positions = get("positions").split(/[/;|]/).map(p => p.trim().toUpperCase()).filter(Boolean);
     const weight = get("weight") ? Number(get("weight")) : null;
     const jersey = get("jersey_number") ? Number(get("jersey_number")) : null;
 
@@ -123,8 +123,8 @@ export default function ImportPlayers() {
       await batchAdd.mutateAsync(parsed);
       toast.success(`${parsed.length} players imported!`);
       navigate("/players");
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
     } finally {
       setImporting(false);
     }

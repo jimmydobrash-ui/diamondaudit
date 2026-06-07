@@ -51,8 +51,8 @@ export default function AuthRecover() {
       if (error) throw error;
       toast.success("Password updated. You're signed in.");
       navigate("/", { replace: true });
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }

@@ -6,7 +6,7 @@ import { useEvaluations } from "@/hooks/useEvaluations";
 import { getAgeGroup } from "@/lib/mock-data";
 import { ClipboardList, ChevronRight } from "lucide-react";
 import { useMemo } from "react";
-import { useMyPlayerGrades } from "@/hooks/usePlayerGrades";
+import { useMyPlayerGrades, type PlayerGradeValue } from "@/hooks/usePlayerGrades";
 import GradeBadge from "@/components/GradeBadge";
 
 function calcOverall(scores: Record<string, number>): number {
@@ -21,7 +21,7 @@ export default function EvaluateList() {
   const { data: grades = [] } = useMyPlayerGrades();
 
   const gradeMap = useMemo(() => {
-    const m: Record<string, string> = {};
+    const m: Record<string, PlayerGradeValue> = {};
     grades.forEach(g => { m[g.player_id] = g.grade; });
     return m;
   }, [grades]);
@@ -67,7 +67,7 @@ export default function EvaluateList() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-foreground truncate">{player.first_name} {player.last_name}</span>
-                      {gradeMap[player.id] && <GradeBadge grade={gradeMap[player.id] as any} />}
+                      {gradeMap[player.id] && <GradeBadge grade={gradeMap[player.id]} />}
                       {player.tags.includes("Top Prospect") && (
                         <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary">TOP</span>
                       )}
