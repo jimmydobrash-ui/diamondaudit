@@ -18,6 +18,7 @@ const EvaluatePlayer = lazy(() => import("./pages/EvaluatePlayer"));
 const Leaderboard = lazy(() => import("./pages/Leaderboard"));
 const ManageTemplate = lazy(() => import("./pages/ManageTemplate"));
 const TeamBuilder = lazy(() => import("./pages/TeamBuilder"));
+const ScoringGuide = lazy(() => import("./pages/ScoringGuide"));
 const Auth = lazy(() => import("./pages/Auth"));
 const AuthRecover = lazy(() => import("./pages/AuthRecover"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -58,6 +59,7 @@ const AppRoutes = () => (
       <Route path="/team-builder" element={<ProtectedRoute><TeamBuilder /></ProtectedRoute>} />
       <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
       <Route path="/settings/template" element={<ProtectedRoute><ManageTemplate /></ProtectedRoute>} />
+      <Route path="/scoring-guide" element={<ProtectedRoute><ScoringGuide /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   </Suspense>

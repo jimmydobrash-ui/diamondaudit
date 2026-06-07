@@ -102,7 +102,7 @@ export default function Leaderboard() {
                       ))}
                     </div>
                   </div>
-                  <OverallScore value={displayScore} className={`text-lg font-bold ${i === 0 ? "text-primary" : "text-foreground"}`} />
+                  <OverallScore value={displayScore} showTier className={`text-lg font-bold ${i === 0 ? "text-primary" : "text-foreground"}`} />
                 </Link>
               </motion.div>
             );

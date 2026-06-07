@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Users, ClipboardList, BarChart3, Home, LogOut, Settings, Layers } from "lucide-react";
+import { Users, ClipboardList, BarChart3, Home, LogOut, Settings, Layers, HelpCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import OrgSwitcher from "@/components/OrgSwitcher";
 import PendingInviteBanner from "@/components/PendingInviteBanner";
@@ -25,6 +25,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <img src="/logo.png" alt="DiamondAudit" className="h-9 w-auto" />
           </Link>
           <div className="flex items-center gap-2">
+            <Link to="/scoring-guide" title="Scoring guide"
+              className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+              <HelpCircle className="w-4 h-4" />
+            </Link>
             <OrgSwitcher />
             <div className="h-8 px-3 rounded-full bg-secondary flex items-center gap-2">
               <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">

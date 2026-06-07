@@ -111,7 +111,7 @@ export default function Players() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    {score && <OverallScore value={score} className={`text-lg font-bold ${score >= 8 ? "text-primary" : "text-foreground"}`} />}
+                    {score && <OverallScore value={score} showTier className={`text-lg font-bold ${score >= 8 ? "text-primary" : "text-foreground"}`} />}
                     <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </Link>
