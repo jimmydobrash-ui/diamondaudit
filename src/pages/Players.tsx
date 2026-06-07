@@ -4,15 +4,12 @@ import { motion } from "framer-motion";
 import AppLayout from "@/components/AppLayout";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useEvaluations } from "@/hooks/useEvaluations";
+import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
 import { getAgeGroup } from "@/lib/mock-data";
+import { calcSliderOverall } from "@/lib/scoring";
 import { useAuth } from "@/hooks/useAuth";
+import OverallScore from "@/components/OverallScore";
 import { Search, Plus, Upload, ChevronRight } from "lucide-react";
-
-function calcOverall(scores: Record<string, number>): number {
-  const vals = Object.values(scores);
-  if (!vals.length) return 0;
-  return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
-}
 
 export default function Players() {
   const [search, setSearch] = useState("");
@@ -20,11 +17,13 @@ export default function Players() {
   const { role } = useAuth();
   const { data: players = [], isLoading } = usePlayers();
   const { data: evaluations = [] } = useEvaluations();
+  const { data: template } = useEvaluationTemplate();
+  const categories = useMemo(() => template?.categories ?? [], [template]);
 
   const playerScores = useMemo(() => {
     const map: Record<string, number[]> = {};
     evaluations.forEach(ev => {
-      const avg = calcOverall(ev.scores as Record<string, number>);
+      const avg = calcSliderOverall(ev.scores as Record<string, number>, categories);
       if (avg > 0) {
         if (!map[ev.player_id]) map[ev.player_id] = [];
         map[ev.player_id].push(avg);
@@ -33,7 +32,7 @@ export default function Players() {
     return Object.fromEntries(
       Object.entries(map).map(([id, vals]) => [id, Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10])
     );
-  }, [evaluations]);
+  }, [evaluations, categories]);
 
   const ageGroups = useMemo(() => {
     return [...new Set(players.map(p => getAgeGroup(p.date_of_birth)))].sort();
@@ -114,7 +113,7 @@ export default function Players() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    {score && <span className={`text-lg font-bold ${score >= 8 ? "text-primary" : "text-foreground"}`}>{score}</span>}
+                    {score && <OverallScore value={score} className={`text-lg font-bold ${score >= 8 ? "text-primary" : "text-foreground"}`} />}
                     <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </Link>

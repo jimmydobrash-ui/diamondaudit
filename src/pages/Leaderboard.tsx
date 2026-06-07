@@ -7,6 +7,7 @@ import { useEvaluations } from "@/hooks/useEvaluations";
 import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
 import { getAgeGroup } from "@/lib/mock-data";
 import { calcSliderOverall, calcCategoryAvg } from "@/lib/scoring";
+import OverallScore from "@/components/OverallScore";
 import { BarChart3, Trophy } from "lucide-react";
 
 export default function Leaderboard() {
@@ -114,7 +115,7 @@ export default function Leaderboard() {
                       ))}
                     </div>
                   </div>
-                  <span className={`text-lg font-bold ${i === 0 ? "text-primary" : "text-foreground"}`}>{displayScore}</span>
+                  <OverallScore value={displayScore} className={`text-lg font-bold ${i === 0 ? "text-primary" : "text-foreground"}`} />
                 </Link>
               </motion.div>
             );

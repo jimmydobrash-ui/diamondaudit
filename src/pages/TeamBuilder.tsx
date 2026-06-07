@@ -6,8 +6,10 @@ import GradeBadge from "@/components/GradeBadge";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useMyPlayerGrades, useSetPlayerGrade, type PlayerGradeValue } from "@/hooks/usePlayerGrades";
 import { useEvaluations } from "@/hooks/useEvaluations";
+import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
 import { getAgeGroup } from "@/lib/mock-data";
-import { calcFlatOverall } from "@/lib/scoring";
+import { calcSliderOverall } from "@/lib/scoring";
+import OverallScore from "@/components/OverallScore";
 import { Layers, ChevronRight, Check } from "lucide-react";
 import { toast } from "sonner";
 
@@ -21,6 +23,8 @@ export default function TeamBuilder() {
   const { data: players = [], isLoading } = usePlayers();
   const { data: grades = [] } = useMyPlayerGrades();
   const { data: evaluations = [] } = useEvaluations();
+  const { data: template } = useEvaluationTemplate();
+  const categories = useMemo(() => template?.categories ?? [], [template]);
   const setGrade = useSetPlayerGrade();
   const [activeTab, setActiveTab] = useState<PlayerGradeValue | "ungraded">("ungraded");
 
@@ -33,11 +37,11 @@ export default function TeamBuilder() {
   const playerScores = useMemo(() => {
     const map: Record<string, number> = {};
     evaluations.forEach(ev => {
-      const avg = calcFlatOverall(ev.scores as Record<string, number>);
+      const avg = calcSliderOverall(ev.scores as Record<string, number>, categories);
       if (avg > 0) map[ev.player_id] = avg;
     });
     return map;
-  }, [evaluations]);
+  }, [evaluations, categories]);
 
   const grouped = useMemo(() => {
     const result: Record<PlayerGradeValue | "ungraded", typeof players> = {
@@ -130,9 +134,7 @@ export default function TeamBuilder() {
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {score && (
-                        <span className={`text-lg font-bold ${score >= 8 ? "text-primary" : "text-foreground"}`}>
-                          {score}
-                        </span>
+                        <OverallScore value={score} className={`text-lg font-bold ${score >= 8 ? "text-primary" : "text-foreground"}`} />
                       )}
                       <Link to={`/evaluate/${player.id}`} className="text-muted-foreground hover:text-foreground">
                         <ChevronRight className="w-4 h-4" />

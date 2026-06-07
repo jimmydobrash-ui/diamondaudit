@@ -4,24 +4,23 @@ import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useEvaluations } from "@/hooks/useEvaluations";
-import { getAgeGroup, evaluationTemplate } from "@/lib/mock-data";
+import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
+import { getAgeGroup } from "@/lib/mock-data";
+import { calcSliderOverall } from "@/lib/scoring";
+import OverallScore from "@/components/OverallScore";
 import { Users, ClipboardList, BarChart3, TrendingUp } from "lucide-react";
-
-function calcOverall(scores: Record<string, number>): number {
-  const vals = Object.values(scores);
-  if (!vals.length) return 0;
-  return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
-}
 
 export default function Index() {
   const { data: players = [] } = usePlayers();
   const { data: evaluations = [] } = useEvaluations();
+  const { data: template } = useEvaluationTemplate();
+  const categories = useMemo(() => template?.categories ?? [], [template]);
 
   const playerScores = useMemo(() => {
     const map: Record<string, number[]> = {};
     evaluations.forEach(ev => {
       const scores = ev.scores as Record<string, number>;
-      const avg = calcOverall(scores);
+      const avg = calcSliderOverall(scores, categories);
       if (avg > 0) {
         if (!map[ev.player_id]) map[ev.player_id] = [];
         map[ev.player_id].push(avg);
@@ -30,18 +29,18 @@ export default function Index() {
     return Object.fromEntries(
       Object.entries(map).map(([id, vals]) => [id, Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10])
     );
-  }, [evaluations]);
+  }, [evaluations, categories]);
 
   const evaluatedCount = Object.keys(playerScores).length;
   const allScores = Object.values(playerScores);
-  const avgScore = allScores.length ? (allScores.reduce((a, b) => a + b, 0) / allScores.length).toFixed(1) : "—";
-  const topScore = allScores.length ? Math.max(...allScores).toFixed(1) : "—";
+  const avgScore = allScores.length ? Math.round((allScores.reduce((a, b) => a + b, 0) / allScores.length) * 10) / 10 : null;
+  const topScore = allScores.length ? Math.max(...allScores) : null;
 
   const stats = [
     { label: "Players", value: players.length, icon: Users },
     { label: "Evaluated", value: evaluatedCount, icon: ClipboardList },
-    { label: "Avg Score", value: avgScore, icon: BarChart3 },
-    { label: "Top Score", value: topScore, icon: TrendingUp },
+    { label: "Avg Score", value: avgScore === null ? "—" : <OverallScore value={avgScore} />, icon: BarChart3 },
+    { label: "Top Score", value: topScore === null ? "—" : <OverallScore value={topScore} />, icon: TrendingUp },
   ];
 
   const topPlayers = useMemo(() => {
@@ -102,7 +101,7 @@ export default function Index() {
                       <span className="text-sm font-semibold text-foreground truncate block">{player.first_name} {player.last_name}</span>
                       <span className="text-xs text-muted-foreground">{getAgeGroup(player.date_of_birth)} · {player.positions.join(", ")}</span>
                     </div>
-                    <span className="text-lg font-bold text-primary">{playerScores[player.id]}</span>
+                    <OverallScore value={playerScores[player.id]} className="text-lg font-bold text-primary" />
                   </Link>
                 </motion.div>
               ))}
