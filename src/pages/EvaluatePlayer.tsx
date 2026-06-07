@@ -80,8 +80,8 @@ export default function EvaluatePlayer() {
       await saveEval.mutateAsync({ playerId, scores: cleanScores, notes });
       setSaved(true);
       toast.success("Evaluation saved!");
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -190,7 +190,7 @@ export default function EvaluatePlayer() {
                   return (
                     <button
                       key={opt.key}
-                      onClick={() => playerId && setGradeMutation.mutateAsync({ playerId, grade: isActive ? null : opt.key }).catch((e: any) => toast.error(e.message))}
+                      onClick={() => playerId && setGradeMutation.mutateAsync({ playerId, grade: isActive ? null : opt.key }).catch((e) => toast.error(e instanceof Error ? e.message : String(e)))}
                       disabled={setGradeMutation.isPending}
                       className={`flex-1 h-10 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all border ${
                         isActive

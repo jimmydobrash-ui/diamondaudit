@@ -157,7 +157,7 @@ export default function ManageTemplate() {
       await saveMutation.mutateAsync({ id: template?.id, name, categories: cleaned });
       setSaved(true);
       toast.success("Template saved!");
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : String(err)); }
   };
 
   const handleResetData = async () => {
@@ -172,8 +172,8 @@ export default function ManageTemplate() {
       setResetConfirm(false);
       // Refresh page to clear cached data
       window.location.reload();
-    } catch (err: any) {
-      toast.error("Reset failed: " + err.message);
+    } catch (err) {
+      toast.error("Reset failed: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setResetting(false);
     }

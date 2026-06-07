@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { useAuth } from "./useAuth";
 
 export interface TemplateSkill {
@@ -58,7 +59,7 @@ export function useSaveTemplate() {
         name,
         organization_id: organizationId,
         is_default: true,
-        categories: categories as any,
+        categories: categories as unknown as Json,
       };
 
       if (id) {

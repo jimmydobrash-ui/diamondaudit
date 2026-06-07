@@ -55,8 +55,8 @@ export default function InviteCoachDialog({ open, onClose }: Props) {
         setInviteLink(link);
         toast.success("Invite created — share the link with the coach.");
       }
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
