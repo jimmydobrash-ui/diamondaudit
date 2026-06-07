@@ -5,6 +5,7 @@ import AppLayout from "@/components/AppLayout";
 import EvaluationSlider from "@/components/EvaluationSlider";
 import EvaluationNumberInput from "@/components/EvaluationNumberInput";
 import { getAgeGroup } from "@/lib/mock-data";
+import { visibleEvalCategories } from "@/lib/scoring";
 import { usePlayers } from "@/hooks/usePlayers";
 import { usePlayerEvaluation, useSaveEvaluation } from "@/hooks/useEvaluations";
 import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
@@ -31,12 +32,7 @@ export default function EvaluatePlayer() {
   const [initialized, setInitialized] = useState(false);
 
   const categories = template?.categories ?? [];
-  const visibleCategories = (() => {
-    const positions = player?.positions ?? [];
-    if (positions.length === 0) return categories;
-    if (positions.includes("C")) return categories;
-    return categories.filter(cat => cat.id !== "catching");
-  })();
+  const visibleCategories = visibleEvalCategories(categories, player?.positions);
 
   // Initialize scores from existing evaluation or defaults
   useEffect(() => {
