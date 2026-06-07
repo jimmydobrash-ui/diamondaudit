@@ -1,23 +1,34 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
-import Index from "./pages/Index";
-import Players from "./pages/Players";
-import AddPlayer from "./pages/AddPlayer";
-import ImportPlayers from "./pages/ImportPlayers";
-import EvaluateList from "./pages/EvaluateList";
-import EvaluatePlayer from "./pages/EvaluatePlayer";
-import Leaderboard from "./pages/Leaderboard";
-import ManageTemplate from "./pages/ManageTemplate";
-import TeamBuilder from "./pages/TeamBuilder";
-import Auth from "./pages/Auth";
-import AuthRecover from "./pages/AuthRecover";
-import NotFound from "./pages/NotFound";
+
+// Route pages are lazy-loaded so each becomes its own chunk, keeping the
+// initial bundle small. The auth wrappers below stay eager since they gate
+// every route.
+const Index = lazy(() => import("./pages/Index"));
+const Players = lazy(() => import("./pages/Players"));
+const AddPlayer = lazy(() => import("./pages/AddPlayer"));
+const ImportPlayers = lazy(() => import("./pages/ImportPlayers"));
+const EvaluateList = lazy(() => import("./pages/EvaluateList"));
+const EvaluatePlayer = lazy(() => import("./pages/EvaluatePlayer"));
+const Leaderboard = lazy(() => import("./pages/Leaderboard"));
+const ManageTemplate = lazy(() => import("./pages/ManageTemplate"));
+const TeamBuilder = lazy(() => import("./pages/TeamBuilder"));
+const Auth = lazy(() => import("./pages/Auth"));
+const AuthRecover = lazy(() => import("./pages/AuthRecover"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
+
+const PageFallback = () => (
+  <div className="min-h-screen bg-background flex items-center justify-center">
+    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -34,20 +45,22 @@ function AuthRoute({ children }: { children: React.ReactNode }) {
 }
 
 const AppRoutes = () => (
-  <Routes>
-    <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
-    <Route path="/auth/recover" element={<AuthRecover />} />
-    <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-    <Route path="/players" element={<ProtectedRoute><Players /></ProtectedRoute>} />
-    <Route path="/players/add" element={<ProtectedRoute><AddPlayer /></ProtectedRoute>} />
-    <Route path="/players/import" element={<ProtectedRoute><ImportPlayers /></ProtectedRoute>} />
-    <Route path="/evaluate" element={<ProtectedRoute><EvaluateList /></ProtectedRoute>} />
-    <Route path="/evaluate/:playerId" element={<ProtectedRoute><EvaluatePlayer /></ProtectedRoute>} />
-    <Route path="/team-builder" element={<ProtectedRoute><TeamBuilder /></ProtectedRoute>} />
-    <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
-    <Route path="/settings/template" element={<ProtectedRoute><ManageTemplate /></ProtectedRoute>} />
-    <Route path="*" element={<NotFound />} />
-  </Routes>
+  <Suspense fallback={<PageFallback />}>
+    <Routes>
+      <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
+      <Route path="/auth/recover" element={<AuthRecover />} />
+      <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+      <Route path="/players" element={<ProtectedRoute><Players /></ProtectedRoute>} />
+      <Route path="/players/add" element={<ProtectedRoute><AddPlayer /></ProtectedRoute>} />
+      <Route path="/players/import" element={<ProtectedRoute><ImportPlayers /></ProtectedRoute>} />
+      <Route path="/evaluate" element={<ProtectedRoute><EvaluateList /></ProtectedRoute>} />
+      <Route path="/evaluate/:playerId" element={<ProtectedRoute><EvaluatePlayer /></ProtectedRoute>} />
+      <Route path="/team-builder" element={<ProtectedRoute><TeamBuilder /></ProtectedRoute>} />
+      <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+      <Route path="/settings/template" element={<ProtectedRoute><ManageTemplate /></ProtectedRoute>} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  </Suspense>
 );
 
 const App = () => (
