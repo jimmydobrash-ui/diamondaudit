@@ -30,7 +30,7 @@
 | Icons | lucide-react |
 | Charts | recharts |
 | Unit tests | Vitest + Testing Library + jsdom |
-| E2E tests | Playwright (currently broken — see "Lovable cleanup" below) |
+| E2E tests | Playwright (`@playwright/test` v1.57, configured; no specs written yet — see "Known gaps") |
 
 **No SSR / no Next.js.** This is a pure SPA. The earlier `dobrash-diamond` Next.js project is a separate codebase.
 
@@ -54,7 +54,7 @@ diamondaudit/
 ├── tailwind.config.ts           — shadcn HSL CSS vars + custom success/warning/info
 ├── components.json              — shadcn config (slate base, css vars, @/components alias)
 ├── eslint.config.js             — flat config, react-hooks + react-refresh
-├── playwright.config.ts         — uses lovable-agent-playwright-config (BROKEN, package not installed)
+├── playwright.config.ts         — vanilla @playwright/test, testDir ./tests/e2e (dir not created yet)
 ├── vitest.config.ts             — jsdom env, src/**/*.{test,spec}.{ts,tsx}
 ├── .env                         — VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY (committed!)
 ├── public/                      — favicon.ico, placeholder.svg, robots.txt
@@ -130,6 +130,7 @@ All tables have RLS enabled. Org isolation is enforced through SECURITY DEFINER 
 4. `20260409001448` — adds `organization_invites` table
 5. `20260409001659` — admin-can-delete policies for grades and invites
 6. `20260507000000` — tightens profile RLS (org-scoped reads), fixes `evaluations` uniqueness with partial indexes, adds `upsert_evaluation` RPC
+7. `20260522000000_lock_down_role_invite_eval` — locks down role/invite/evaluation policies. **Applied to the live prod DB via the Supabase MCP on 2026-06-06** (not in `supabase/migrations/` as a local file).
 
 ---
 
@@ -222,15 +223,15 @@ The repo includes both `package-lock.json` and `bun.lock` / `bun.lockb`. **Pick 
 
 ### 2. Env vars
 
-`.env` is **already committed** in the repo with these three:
+Local secrets live in `.env.local` (gitignored); a checked-in `.env.example` documents the keys. The live DiamondAudit project (Supabase project `tusmfktpooodjcsztefo`, region us-east-2, created 2026-05-07) is referenced by these three:
 
 ```
-VITE_SUPABASE_PROJECT_ID="spklyeogyuoulcpgysme"
-VITE_SUPABASE_URL="https://spklyeogyuoulcpgysme.supabase.co"
-VITE_SUPABASE_PUBLISHABLE_KEY="<the supabase anon JWT>"
+VITE_SUPABASE_PROJECT_ID="tusmfktpooodjcsztefo"
+VITE_SUPABASE_URL="https://tusmfktpooodjcsztefo.supabase.co"
+VITE_SUPABASE_PUBLISHABLE_KEY="<the supabase publishable key>"
 ```
 
-The `PUBLISHABLE_KEY` is the Supabase **anon key**, which is safe to ship to the browser by design. Still — `.env` is not in `.gitignore`, and best practice is to add it. Use `.env.local` (already covered by `*.local` in `.gitignore`) or check in a `.env.example` instead.
+The `PUBLISHABLE_KEY` is the Supabase **publishable key** (`sb_publishable_...`), which is safe to ship to the browser by design.
 
 ### 3. Run
 
@@ -243,7 +244,7 @@ npm run test     # Vitest (one-shot)
 npm run test:watch
 ```
 
-Playwright is configured but the config currently imports a Lovable-only package — see below.
+Playwright is configured and runnable (`npx playwright test`), but no e2e specs exist yet — see "Known gaps".
 
 ---
 
@@ -275,5 +276,5 @@ All removed: `lovable-tagger` (config + dependency), broken Playwright config (r
 ## Known gaps
 
 - Invite emails are not implemented (see "Invites" section above).
-- Playwright config still references a Lovable-only package; e2e suite doesn't run.
+- Playwright is wired up (`@playwright/test` v1.57, vanilla config pointing at `./tests/e2e`) but no e2e specs are written yet — the `tests/e2e/` directory doesn't exist.
 - Generic placeholder favicon.
