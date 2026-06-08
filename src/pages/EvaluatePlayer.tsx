@@ -123,7 +123,7 @@ export default function EvaluatePlayer() {
     <AppLayout>
       <div className="container py-4 space-y-4">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3">
-          <button onClick={() => navigate("/evaluate")} className="touch-target flex items-center justify-center text-muted-foreground">
+          <button onClick={() => navigate("/evaluate")} aria-label="Back to evaluate list" className="touch-target flex items-center justify-center text-muted-foreground">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
