@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Slider } from "@/components/ui/slider";
 
 interface EvaluationSliderProps {
@@ -9,6 +9,9 @@ interface EvaluationSliderProps {
 
 export default function EvaluationSlider({ label, value, onChange }: EvaluationSliderProps) {
   const [localValue, setLocalValue] = useState(value);
+
+  // Reflect external value changes (e.g. saved scores loading in after mount).
+  useEffect(() => { setLocalValue(value); }, [value]);
 
   const handleChange = useCallback((vals: number[]) => {
     const v = vals[0];

@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 interface EvaluationNumberInputProps {
   label: string;
@@ -9,6 +9,15 @@ interface EvaluationNumberInputProps {
 
 export default function EvaluationNumberInput({ label, value, unit, onChange }: EvaluationNumberInputProps) {
   const [localValue, setLocalValue] = useState(value !== null && value !== undefined ? String(value) : "");
+
+  // Reflect external value changes (e.g. saved scores loading in after mount),
+  // but don't clobber an in-progress entry like "6." — compare parsed values.
+  useEffect(() => {
+    const current = localValue.trim() === "" ? null : parseFloat(localValue);
+    if (current !== value) {
+      setLocalValue(value !== null && value !== undefined ? String(value) : "");
+    }
+  }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
