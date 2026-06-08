@@ -104,21 +104,48 @@ export async function bootstrapOrganization({
 
   const trimmedOrgName = orgName?.trim();
 
-  // If signing up without an org name AND a pending invite exists for this
-  // email, skip auto-creating an org — PendingInviteBanner will let the user
-  // accept the invite into the inviter's org.
-  if (!trimmedOrgName && email) {
+  // If a pending invite exists for this email, auto-join the inviting org
+  // instead of creating a new one. Without this, an invited user gets their
+  // own auto-created org AND the invited org (via the banner) — ending up in
+  // both. The invite is a deliberate admin action, so it wins.
+  if (email) {
     const { data: pendingInvite } = await supabase
       .from("organization_invites")
-      .select("id")
+      .select("id, organization_id, role")
       .eq("status", "pending")
       .ilike("email", email)
       .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle();
 
     if (pendingInvite) {
-      return null;
+      const { error: roleErr } = await supabase.from("user_roles").insert({
+        user_id: userId,
+        organization_id: pendingInvite.organization_id,
+        role: pendingInvite.role,
+      });
+      // 23505 = unique violation (already a member from a retry/race) — fine.
+      if (roleErr && roleErr.code !== "23505") {
+        console.error("Unable to accept invite role", roleErr);
+        return null;
+      }
+
+      await supabase
+        .from("organization_invites")
+        .update({ status: "accepted" })
+        .eq("id", pendingInvite.id);
+
+      await supabase.from("profiles").upsert(
+        {
+          user_id: userId,
+          display_name: displayName ?? null,
+          current_organization_id: pendingInvite.organization_id,
+        },
+        { onConflict: "user_id" },
+      );
+
+      return pendingInvite.organization_id;
     }
   }
 
