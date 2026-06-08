@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import AppLayout from "@/components/AppLayout";
@@ -30,33 +30,37 @@ export default function EvaluatePlayer() {
   const [scores, setScores] = useState<Record<string, number | null>>({});
   const [notes, setNotes] = useState("");
   const [saved, setSaved] = useState(false);
-  const [initialized, setInitialized] = useState(false);
+  // Which player we've already populated the form for, so we load saved scores
+  // exactly once per player (and don't clobber the coach's in-progress edits).
+  const populatedForRef = useRef<string | null>(null);
 
   const categories = template?.categories ?? [];
   const visibleCategories = visibleEvalCategories(categories, player?.positions);
 
-  // Initialize scores from existing evaluation or defaults
+  // Populate the form from the saved evaluation once the query resolves
+  // (existingEval is undefined while loading, then null = no eval, or the row).
+  // Sliders render immediately at defaults and update in place when the saved
+  // scores arrive, so we never block the page on the query.
   useEffect(() => {
-    if (initialized || !categories.length) return;
+    if (!player || !categories.length) return;
+    if (existingEval === undefined) return; // saved evaluation not loaded yet
+    if (populatedForRef.current === playerId) return; // already populated this player
     const existing = existingEval?.scores as Record<string, number> | undefined;
     const initial: Record<string, number | null> = {};
     categories.forEach(cat => {
       cat.skills.forEach(skill => {
-        if (skill.type === "slider") {
-          initial[skill.id] = existing?.[skill.id] ?? 5;
-        } else {
-          initial[skill.id] = existing?.[skill.id] ?? null;
-        }
+        initial[skill.id] = skill.type === "slider"
+          ? (existing?.[skill.id] ?? 5)
+          : (existing?.[skill.id] ?? null);
       });
     });
     setScores(initial);
     setNotes(existingEval?.notes ?? player?.notes ?? "");
-    if (existingEval !== undefined || player) setInitialized(true);
-  }, [existingEval, player, initialized, categories]);
+    populatedForRef.current = playerId ?? null;
+  }, [existingEval, player, categories, playerId]);
 
-  // Reset when player changes
+  // Reset transient UI when the player changes
   useEffect(() => {
-    setInitialized(false);
     setSaved(false);
     setActiveCategory(0);
   }, [playerId]);
