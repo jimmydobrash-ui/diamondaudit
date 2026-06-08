@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import AppLayout from "@/components/AppLayout";
@@ -34,7 +34,7 @@ export default function EvaluatePlayer() {
   // exactly once per player (and don't clobber the coach's in-progress edits).
   const populatedForRef = useRef<string | null>(null);
 
-  const categories = template?.categories ?? [];
+  const categories = useMemo(() => template?.categories ?? [], [template]);
   const visibleCategories = visibleEvalCategories(categories, player?.positions);
 
   // Populate the form from the saved evaluation once the query resolves

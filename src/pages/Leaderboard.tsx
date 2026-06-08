@@ -17,7 +17,7 @@ export default function Leaderboard() {
   const { data: evaluations = [] } = useEvaluations();
   const { data: template } = useEvaluationTemplate();
 
-  const categories = template?.categories ?? [];
+  const categories = useMemo(() => template?.categories ?? [], [template]);
 
   const playerAggregates = useMemo(
     () => aggregateScoresByPlayer(evaluations.map(ev => ({ player_id: ev.player_id, scores: ev.scores as Record<string, number> }))),
