@@ -29,3 +29,9 @@ dist-ssr
 *.sw?
 
 .claude-flow/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
