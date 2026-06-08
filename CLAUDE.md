@@ -30,7 +30,7 @@
 | Icons | lucide-react |
 | Charts | recharts |
 | Unit tests | Vitest + Testing Library + jsdom |
-| E2E tests | Playwright (`@playwright/test` v1.57, configured; no specs written yet — see "Known gaps") |
+| E2E tests | Playwright (`@playwright/test` v1.57; smoke specs in `tests/e2e/`, run via `npm run test:e2e`) |
 
 **No SSR / no Next.js.** This is a pure SPA. The earlier `dobrash-diamond` Next.js project is a separate codebase.
 
@@ -111,7 +111,7 @@ All tables have RLS enabled. Org isolation is enforced through SECURITY DEFINER 
 | `user_roles` | RBAC | `(user_id, organization_id, role)` unique; role enum: `admin` \| `coach` |
 | `profiles` | per-user | `user_id` unique, `display_name`, `current_organization_id` |
 | `players` | roster | `first_name`, `last_name`, `date_of_birth`, `positions[]`, `bats` (L/R/S), `throws` (L/R), `height`, `weight`, `jersey_number`, `tags[]` |
-| `tryout_events` | (defined, not actively used yet) | `event_date`, `age_groups[]`, `status` |
+| `tryout_events` | (defined; intentionally retained for a planned scheduling feature, not used by the app yet) | `event_date`, `age_groups[]`, `status` |
 | `evaluation_templates` | per-org skill template | `categories` JSONB; one `is_default = true` per org |
 | `evaluations` | per-coach scores | `(player_id, coach_id, event_id)` unique; `scores` JSONB; `notes` |
 | `player_grades` | per-coach Offer/Bubble/Pass | `(player_id, coach_id)` unique; grade enum: `offer` \| `bubble` \| `pass` |
@@ -244,7 +244,7 @@ npm run test     # Vitest (one-shot)
 npm run test:watch
 ```
 
-Playwright is configured and runnable (`npx playwright test`), but no e2e specs exist yet — see "Known gaps".
+Playwright smoke specs live in `tests/e2e/` — run `npm run test:e2e` (or `npx playwright test`). Authenticated flows still need a seeded test account.
 
 ---
 
@@ -275,6 +275,14 @@ All removed: `lovable-tagger` (config + dependency), broken Playwright config (r
 
 ## Known gaps
 
-- Invite emails are not implemented (see "Invites" section above).
-- Playwright is wired up (`@playwright/test` v1.57, vanilla config pointing at `./tests/e2e`) but no e2e specs are written yet — the `tests/e2e/` directory doesn't exist.
+- **Invite emails**: implemented via the `supabase/functions/send-invite` Edge Function (Resend), with copy-link fallback. **Not live until** its secrets are set and it's deployed — see [`supabase/functions/send-invite/README.md`](supabase/functions/send-invite/README.md) (`RESEND_API_KEY`, `INVITE_FROM_EMAIL`, `SITE_URL`, verify a sending domain, `supabase functions deploy send-invite`).
+- **`tryout_events` table**: intentionally retained for a planned event/session-scheduling feature; no UI uses it yet. Keep until that feature is built (or drop the table + its generated types if shelved).
+- **Auth: leaked-password protection** is disabled. Enable it in Supabase → Authentication → Policies (HaveIBeenPwned check). Dashboard-only toggle; not in code.
+- **Pending DB migration**: `supabase/migrations/20260608000000_lock_down_fn_grants_and_org_insert.sql` (revokes anon/PUBLIC EXECUTE on SECURITY DEFINER helpers, tightens `organizations` INSERT) — committed but **apply to prod still pending**.
 - Generic placeholder favicon.
+
+## Testing
+
+- Unit/component tests: `npm test` (Vitest + Testing Library). Covers `lib/scoring` and the evaluation inputs/score display.
+- E2E: `npm run test:e2e` (Playwright, specs in `tests/e2e/`). Smoke specs cover auth redirect + sign-in render; authenticated flows need a seeded test account.
+- Types: `npm run typecheck` (strict; the Vite/SWC build does **not** type-check).
