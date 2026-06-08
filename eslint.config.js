@@ -23,4 +23,13 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": "off",
     },
   },
+  {
+    // shadcn/ui primitives export variant helpers alongside components, and the
+    // auth provider is intentionally colocated with its hook. Fast-refresh
+    // granularity isn't worth restructuring generated/context files.
+    files: ["src/components/ui/**/*.tsx", "src/hooks/useAuth.tsx"],
+    rules: {
+      "react-refresh/only-export-components": "off",
+    },
+  },
 );

@@ -150,25 +150,25 @@ describe("scoreTier", () => {
   });
 
   it("maps mid-range overalls to the right rubric tier", () => {
-    expect(scoreTier(1).label).toBe("Needs significant work");
-    expect(scoreTier(2.9).label).toBe("Needs significant work");
-    expect(scoreTier(3).label).toBe("Below Average");
-    expect(scoreTier(4.9).label).toBe("Below Average");
-    expect(scoreTier(5).label).toBe("Average");
-    expect(scoreTier(6.5).label).toBe("Average");
-    expect(scoreTier(7).label).toBe("Above Average");
-    expect(scoreTier(8.9).label).toBe("Above Average");
+    expect(scoreTier(1)?.label).toBe("Needs significant work");
+    expect(scoreTier(2.9)?.label).toBe("Needs significant work");
+    expect(scoreTier(3)?.label).toBe("Below Average");
+    expect(scoreTier(4.9)?.label).toBe("Below Average");
+    expect(scoreTier(5)?.label).toBe("Average");
+    expect(scoreTier(6.5)?.label).toBe("Average");
+    expect(scoreTier(7)?.label).toBe("Above Average");
+    expect(scoreTier(8.9)?.label).toBe("Above Average");
   });
 
   it("separates Elite (9) from Unicorn (top of scale)", () => {
-    expect(scoreTier(9).label).toBe("Elite");
-    expect(scoreTier(9.4).label).toBe("Elite");
-    expect(scoreTier(9.5).label).toBe("Unicorn");
-    expect(scoreTier(10).label).toBe("Unicorn");
+    expect(scoreTier(9)?.label).toBe("Elite");
+    expect(scoreTier(9.4)?.label).toBe("Elite");
+    expect(scoreTier(9.5)?.label).toBe("Unicorn");
+    expect(scoreTier(10)?.label).toBe("Unicorn");
   });
 
   it("exposes a compact league badge for the inline tag", () => {
-    expect(scoreTier(5.8).badge).toBe("Average (AAA)");
-    expect(scoreTier(3.2).badge).toBe("Below Avg (AA)");
+    expect(scoreTier(5.8)?.badge).toBe("Average (AAA)");
+    expect(scoreTier(3.2)?.badge).toBe("Below Avg (AA)");
   });
 });

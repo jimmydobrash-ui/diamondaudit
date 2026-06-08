@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.4"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -416,6 +416,32 @@ export type Database = {
       is_org_member: {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
+      }
+      upsert_evaluation: {
+        Args: {
+          p_event_id?: string
+          p_notes: string
+          p_organization_id: string
+          p_player_id: string
+          p_scores: Json
+        }
+        Returns: {
+          coach_id: string
+          created_at: string
+          event_id: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          player_id: string
+          scores: Json
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "evaluations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {
