@@ -1,4 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, QueryCache } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -23,7 +24,14 @@ const Auth = lazy(() => import("./pages/Auth"));
 const AuthRecover = lazy(() => import("./pages/AuthRecover"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-const queryClient = new QueryClient();
+// Surface data-loading failures instead of silently showing empty screens.
+const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Something went wrong loading data.");
+    },
+  }),
+});
 
 const PageFallback = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">

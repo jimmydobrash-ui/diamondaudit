@@ -13,8 +13,9 @@ import { BarChart3, Trophy } from "lucide-react";
 export default function Leaderboard() {
   const [sortBy, setSortBy] = useState("overall");
   const [ageFilter, setAgeFilter] = useState("all");
-  const { data: players = [] } = usePlayers();
-  const { data: evaluations = [] } = useEvaluations();
+  const { data: players = [], isLoading: playersLoading } = usePlayers();
+  const { data: evaluations = [], isLoading: evalsLoading } = useEvaluations();
+  const isLoading = playersLoading || evalsLoading;
   const { data: template } = useEvaluationTemplate();
 
   const categories = useMemo(() => template?.categories ?? [], [template]);
@@ -82,7 +83,11 @@ export default function Leaderboard() {
         </div>
 
         <div className="space-y-2">
-          {ranked.map((item, i) => {
+          {isLoading &&
+            Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-16 rounded-xl bg-secondary animate-pulse" />
+            ))}
+          {!isLoading && ranked.map((item, i) => {
             const cat = categories.find(c => c.id === sortBy);
             const displayScore = sortBy === "overall" ? item.overall : (cat ? calcCategoryAvg(item.scores, cat) ?? 0 : 0);
             return (
@@ -107,7 +112,7 @@ export default function Leaderboard() {
               </motion.div>
             );
           })}
-          {ranked.length === 0 && (
+          {!isLoading && ranked.length === 0 && (
             <div className="py-12 text-center text-muted-foreground text-sm">No evaluations yet</div>
           )}
         </div>
