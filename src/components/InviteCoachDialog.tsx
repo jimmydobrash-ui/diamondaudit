@@ -37,12 +37,16 @@ export default function InviteCoachDialog({ open, onClose }: Props) {
     const cleanEmail = email.trim().toLowerCase();
 
     try {
-      const { error } = await supabase.from("organization_invites").insert({
-        organization_id: organizationId,
-        invited_by: user.id,
-        email: cleanEmail,
-        role: "coach" as const,
-      });
+      const { data: invite, error } = await supabase
+        .from("organization_invites")
+        .insert({
+          organization_id: organizationId,
+          invited_by: user.id,
+          email: cleanEmail,
+          role: "coach" as const,
+        })
+        .select("id")
+        .single();
 
       if (error) {
         if (error.code === "23505") {
@@ -53,7 +57,18 @@ export default function InviteCoachDialog({ open, onClose }: Props) {
       } else {
         const link = `${window.location.origin}/auth?invite=1&email=${encodeURIComponent(cleanEmail)}`;
         setInviteLink(link);
-        toast.success("Invite created — share the link with the coach.");
+
+        // Try to email the link. Falls back to the copy-link UX if the email
+        // function isn't deployed/configured yet, so invites always work.
+        try {
+          const { error: fnErr } = await supabase.functions.invoke("send-invite", {
+            body: { inviteId: invite.id },
+          });
+          if (fnErr) throw fnErr;
+          toast.success(`Invite emailed to ${cleanEmail}`);
+        } catch {
+          toast.success("Invite created — share the link with the coach.");
+        }
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
@@ -119,7 +134,7 @@ export default function InviteCoachDialog({ open, onClose }: Props) {
         ) : (
           <>
             <p className="text-sm text-muted-foreground">
-              Enter a coach's email to create an invite link you can share with them.
+              Enter a coach's email. We'll email them an invite link — and you can copy it to share directly too.
             </p>
             <form onSubmit={handleInvite} className="space-y-3">
               <input
@@ -136,7 +151,7 @@ export default function InviteCoachDialog({ open, onClose }: Props) {
                 className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <Send className="w-4 h-4" />
-                {loading ? "Creating..." : "Create Invite Link"}
+                {loading ? "Sending..." : "Send Invite"}
               </button>
             </form>
           </>
