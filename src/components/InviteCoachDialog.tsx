@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -16,8 +16,6 @@ export default function InviteCoachDialog({ open, onClose }: Props) {
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  if (!open) return null;
-
   const reset = () => {
     setEmail("");
     setInviteLink(null);
@@ -28,6 +26,19 @@ export default function InviteCoachDialog({ open, onClose }: Props) {
     reset();
     onClose();
   };
+
+  // Close on Escape while open.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") handleClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  if (!open) return null;
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,8 +100,17 @@ export default function InviteCoachDialog({ open, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-sm bg-card rounded-2xl p-6 space-y-4 shadow-xl">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      onClick={handleClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Invite coach"
+        onClick={e => e.stopPropagation()}
+        className="w-full max-w-sm bg-card rounded-2xl p-6 space-y-4 shadow-xl"
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-primary" />

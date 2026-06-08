@@ -11,7 +11,7 @@ import OverallScore from "@/components/OverallScore";
 import { Users, ClipboardList, BarChart3, TrendingUp } from "lucide-react";
 
 export default function Index() {
-  const { data: players = [] } = usePlayers();
+  const { data: players = [], isLoading } = usePlayers();
   const { data: evaluations = [] } = useEvaluations();
   const { data: template } = useEvaluationTemplate();
   const categories = useMemo(() => template?.categories ?? [], [template]);
@@ -106,7 +106,7 @@ export default function Index() {
           </div>
         )}
 
-        {players.length === 0 && (
+        {!isLoading && players.length === 0 && (
           <div className="text-center py-12 space-y-3">
             <p className="text-muted-foreground text-sm">No players yet. Add your roster to get started.</p>
             <div className="flex gap-2 justify-center">
