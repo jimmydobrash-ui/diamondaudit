@@ -39,6 +39,15 @@ export default function OrgSwitcher() {
     })();
   }, [user, organizationId]);
 
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
   if (orgs.length <= 1) return null;
 
   const switchOrg = async (orgId: string) => {
@@ -60,6 +69,9 @@ export default function OrgSwitcher() {
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="Switch organization"
         className="h-8 px-3 rounded-full bg-secondary flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors max-w-[160px]"
       >
         <Building2 className="w-3.5 h-3.5 flex-shrink-0" />

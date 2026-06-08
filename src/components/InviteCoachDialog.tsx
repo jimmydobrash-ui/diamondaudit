@@ -116,7 +116,7 @@ export default function InviteCoachDialog({ open, onClose }: Props) {
             <UserPlus className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-bold text-foreground">Invite Coach</h2>
           </div>
-          <button onClick={handleClose} className="p-1 text-muted-foreground hover:text-foreground">
+          <button onClick={handleClose} aria-label="Close" className="p-1 text-muted-foreground hover:text-foreground">
             <X className="w-5 h-5" />
           </button>
         </div>

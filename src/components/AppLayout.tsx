@@ -25,7 +25,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <img src="/logo.png" alt="DiamondAudit" className="h-9 w-auto" />
           </Link>
           <div className="flex items-center gap-2">
-            <Link to="/scoring-guide" title="Scoring guide"
+            <Link to="/scoring-guide" title="Scoring guide" aria-label="Scoring guide"
               className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
               <HelpCircle className="w-4 h-4" />
             </Link>
@@ -38,7 +38,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 {profile?.display_name ?? (role === "admin" ? "Admin" : "Coach")}
               </span>
             </div>
-            <button onClick={signOut} className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+            <button onClick={signOut} aria-label="Sign out" title="Sign out" className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
               <LogOut className="w-3.5 h-3.5" />
             </button>
           </div>
