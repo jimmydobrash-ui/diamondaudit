@@ -163,6 +163,7 @@ export default function InviteCoachDialog({ open, onClose }: Props) {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
+                autoFocus
                 className="w-full h-12 px-4 rounded-xl bg-secondary text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
               <button
