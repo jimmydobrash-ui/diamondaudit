@@ -10,9 +10,9 @@ export default function NotFound() {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div role="main" className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="text-center space-y-4 max-w-sm">
-        <img src="/logo.png" alt="DiamondAudit" className="w-20 h-20 mx-auto object-contain opacity-90" />
+        <img src="/logo-256.png" alt="DiamondAudit" width={80} height={80} className="w-20 h-20 mx-auto object-contain opacity-90" />
         <h1 className="text-5xl font-bold text-foreground tracking-tight">404</h1>
         <p className="text-muted-foreground">
           We couldn't find that page. It may have moved or never existed.

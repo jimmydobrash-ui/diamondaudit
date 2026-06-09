@@ -63,7 +63,7 @@ export default function Auth() {
 
   if (mode === "confirmation-sent" || mode === "reset-sent") {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div role="main" className="min-h-screen bg-background flex items-center justify-center p-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm text-center space-y-4">
           <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
             <Mail className="w-6 h-6 text-primary" />
@@ -95,14 +95,14 @@ export default function Auth() {
       : "Sign in to continue";
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div role="main" className="min-h-screen bg-background flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm"
       >
         <div className="text-center mb-8">
-          <img src="/logo.png" alt="DiamondAudit" className="w-32 h-32 mx-auto mb-2 object-contain" />
+          <img src="/logo-256.png" alt="DiamondAudit" width={128} height={128} className="w-32 h-32 mx-auto mb-2 object-contain" />
           <p className="text-sm text-muted-foreground mt-1">{subhead}</p>
         </div>
 

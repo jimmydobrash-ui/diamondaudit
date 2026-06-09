@@ -60,7 +60,7 @@ export default function AuthRecover() {
 
   if (recoveryError) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div role="main" className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-sm text-center space-y-4">
           <h1 className="text-xl font-bold text-foreground">Reset link invalid</h1>
           <p className="text-sm text-muted-foreground">{recoveryError}</p>
@@ -77,7 +77,7 @@ export default function AuthRecover() {
 
   if (!recoveryReady) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div role="main" className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-sm text-center space-y-3">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-sm text-muted-foreground">Verifying reset link…</p>
@@ -87,7 +87,7 @@ export default function AuthRecover() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div role="main" className="min-h-screen bg-background flex items-center justify-center p-4">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
