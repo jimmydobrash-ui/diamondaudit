@@ -19,7 +19,7 @@
 | Layer | Tool |
 |---|---|
 | Build | Vite 5 + `@vitejs/plugin-react-swc` |
-| Language | TypeScript (loose: `strict: false`, `noImplicitAny: false`) |
+| Language | TypeScript (**strict mode**) — `npm run typecheck`; the Vite/SWC build does **not** type-check |
 | UI framework | React 18 + react-router-dom v6 |
 | Styling | Tailwind CSS 3 + shadcn/ui (Radix primitives, ~49 components in [`src/components/ui/`](src/components/ui/)) |
 | Animation | framer-motion 11 |
@@ -54,28 +54,31 @@ diamondaudit/
 ├── tailwind.config.ts           — shadcn HSL CSS vars + custom success/warning/info
 ├── components.json              — shadcn config (slate base, css vars, @/components alias)
 ├── eslint.config.js             — flat config, react-hooks + react-refresh
-├── playwright.config.ts         — vanilla @playwright/test, testDir ./tests/e2e (dir not created yet)
+├── playwright.config.ts         — vanilla @playwright/test, testDir ./tests/e2e
 ├── vitest.config.ts             — jsdom env, src/**/*.{test,spec}.{ts,tsx}
-├── .env                         — VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY (committed!)
-├── public/                      — favicon.ico, placeholder.svg, robots.txt
+├── .env.local                   — gitignored; .env.example documents the keys
+├── public/                      — favicon-32/192.png, apple-touch-icon.png, logo.png/logo-256.png, robots.txt
 ├── supabase/
 │   ├── config.toml              — project_id only
-│   └── migrations/              — 5 SQL files, full schema + RLS
+│   ├── functions/send-invite/   — Resend invite-email Edge Function (+ README)
+│   └── migrations/              — full schema + RLS (see Migrations list)
 └── src/
     ├── main.tsx                 — React root
-    ├── App.tsx                  — Routes + ProtectedRoute/AuthRoute wrappers
+    ├── App.tsx                  — lazy-loaded routes + ProtectedRoute/AuthRoute; global query-error toasts
     ├── index.css                — Tailwind layers + design tokens (HSL vars, light + dark)
     ├── App.css                  — legacy Vite default styles (mostly unused)
-    ├── pages/                   — 11 route components
-    ├── components/              — feature components + ui/ (shadcn)
+    ├── pages/                   — 12 route components
+    ├── components/              — feature components (OverallScore, ScoringRuler, …) + ui/ (shadcn)
     ├── hooks/                   — useAuth, usePlayers, useEvaluations, etc.
     ├── integrations/supabase/
     │   ├── client.ts            — createClient with localStorage session
-    │   └── types.ts             — auto-generated from DB schema
+    │   └── types.ts             — generated from DB schema (regen via Supabase MCP/CLI)
     ├── lib/
     │   ├── utils.ts             — shadcn `cn` helper
+    │   ├── scoring.ts           — scoring source of truth (see Scoring)
+    │   ├── orgBootstrap.ts      — org creation + invite auto-join at signup
     │   └── mock-data.ts         — mostly dead; only `getAgeGroup` is still used
-    └── test/                    — vitest setup + example.test.ts
+    └── test/                    — vitest setup + lib/component tests
 ```
 
 ---
@@ -97,13 +100,16 @@ All routes are wrapped in `ProtectedRoute` (redirects to `/auth` if no session).
 | `/team-builder` | [`TeamBuilder.tsx`](src/pages/TeamBuilder.tsx) | grade as Offer/Bubble/Pass |
 | `/leaderboard` | [`Leaderboard.tsx`](src/pages/Leaderboard.tsx) | ranked results |
 | `/settings/template` | [`ManageTemplate.tsx`](src/pages/ManageTemplate.tsx) | customize evaluation template |
+| `/scoring-guide` | [`ScoringGuide.tsx`](src/pages/ScoringGuide.tsx) | rubric reference (score → tier → meaning); reached via the header help icon |
 | `*` | [`NotFound.tsx`](src/pages/NotFound.tsx) | 404 |
+
+All route pages are lazy-loaded (`React.lazy`) so each is its own chunk; the auth wrappers stay eager.
 
 ---
 
 ## Data model (Supabase Postgres)
 
-All tables have RLS enabled. Org isolation is enforced through SECURITY DEFINER helpers (`has_role`, `is_org_member`, `get_user_org_id`) to avoid recursive RLS.
+All tables have RLS enabled. Org isolation is enforced through SECURITY DEFINER helpers (`has_role`, `is_org_member`, `get_user_org_id`) to avoid recursive RLS. These helpers keep `EXECUTE` for `authenticated` (RLS policies call them) but **not** `anon`/PUBLIC (see migration 8); don't re-grant them broadly.
 
 | Table | Purpose | Notable columns / constraints |
 |---|---|---|
@@ -130,7 +136,10 @@ All tables have RLS enabled. Org isolation is enforced through SECURITY DEFINER 
 4. `20260409001448` — adds `organization_invites` table
 5. `20260409001659` — admin-can-delete policies for grades and invites
 6. `20260507000000` — tightens profile RLS (org-scoped reads), fixes `evaluations` uniqueness with partial indexes, adds `upsert_evaluation` RPC
-7. `20260522000000_lock_down_role_invite_eval` — locks down role/invite/evaluation policies. **Applied to the live prod DB via the Supabase MCP on 2026-06-06** (not in `supabase/migrations/` as a local file).
+7. `20260522000000_lock_down_role_invite_eval` — locks down `user_roles` INSERT (bootstrap-or-matching-invite only), an `organization_invites` immutability trigger, and player/event ownership checks in `upsert_evaluation`. **Applied to prod.**
+8. `20260608000000_lock_down_fn_grants_and_org_insert` — revokes anon/PUBLIC `EXECUTE` on the SECURITY DEFINER helpers (keeps `authenticated` for the RLS helpers + `upsert_evaluation`; internal trigger fns owner-only), and replaces the `organizations` INSERT `WITH CHECK (true)` with a first-org bootstrap check. **Applied to prod + verified (RLS intact).**
+
+> **Note:** migrations are applied manually (via the Supabase MCP/SQL editor), not by a CI pipeline — the `supabase_migrations` tracking table is empty. Keep the `.sql` files and prod in sync by hand.
 
 ---
 
@@ -145,15 +154,19 @@ All tables have RLS enabled. Org isolation is enforced through SECURITY DEFINER 
 
 `bootstrapOrganization` generates the org UUID client-side so the insert doesn't need a `.select()` (which would fail RLS — at the moment of insert, the user isn't yet a member of the org they just created). This is the correct pattern; don't revert to `.insert(...).select()`.
 
+**Invite auto-join:** before creating a new org, `bootstrapOrganization` checks for a pending `organization_invites` row matching the new user's email. If found, it joins that org instead (inserts the `user_roles` row, marks the invite `accepted`, sets it current) — so an invited user lands in the inviter's org rather than getting their own *and* the invited one.
+
 ---
 
-## Invites (no email yet)
+## Invites
 
-The coach invite system is **in-app only**. `InviteCoachDialog` inserts a row into `organization_invites`; nothing is emailed. No Resend integration, no Supabase Edge Functions (`supabase/functions/` doesn't exist), no email-related env vars. The "Invite sent to {email}" toast is misleading.
+An admin invites a coach via [`InviteCoachDialog`](src/components/InviteCoachDialog.tsx), which inserts a row into `organization_invites`. Three ways the recipient ends up in the org:
 
-A recipient only learns about an invite if they happen to sign up or log in with the invited email — at which point [`PendingInviteBanner`](src/components/PendingInviteBanner.tsx) polls the table (email match, case-insensitive) and lets them accept. New signups always create a fresh org via `bootstrapOrganization`, so an invited-but-not-yet-registered user ends up in *their own* org and would have to accept the banner to join the inviter's org (ending up in both).
+1. **Email** — the dialog calls the [`send-invite`](supabase/functions/send-invite/) Edge Function (Resend) with the invite id; the function verifies the caller is an org admin (service role) and emails the link `…/auth?invite=1&email=…`. **Inert until deployed + secrets set** (see its README); the dialog **falls back to the copy-link UX** if the call fails, so invites always work.
+2. **Auto-join at signup** — if the recipient signs up with the invited email, `bootstrapOrganization` auto-joins them to the inviter's org (see Auth flow).
+3. **Pending-invite banner** — an already-registered user with a matching pending invite sees [`PendingInviteBanner`](src/components/PendingInviteBanner.tsx) and can accept (this is the path for adding an *existing* user to an *additional* org).
 
-Planned fix: shareable copy-link UX from the dialog + Auth-page handling for `?invite=1&email=...`. Not implemented yet.
+`Auth.tsx` reads `?invite=1&email=…` to prefill the email and skip the org-name field (so signup doesn't stash a `pending_org_name`).
 
 ---
 
@@ -181,6 +194,16 @@ All slider scores reflect skill level relative to organized baseball competition
 - 1-8: 0.5 increments allowed
 - 9-10: whole numbers only
 
+### How scoring is computed & shown
+
+[`src/lib/scoring.ts`](src/lib/scoring.ts) is the single source of truth:
+
+- **`calcSliderOverall(scores, categories)`** — a player's overall is the average of **slider-type skills only**, on a **0–10** scale. Number-type skills (velocities in mph, times in sec) are **excluded** so they don't distort the scale. (A prior bug used a flat average of *all* fields, producing nonsense like "11.1"; that's gone.)
+- **`aggregateScoresByPlayer(evaluations)`** — the canonical cross-coach roll-up: average each skill across the coaches who scored it (rounded to 1 dp), *then* compute the overall. **Every screen** (Players, dashboard, EvaluateList, TeamBuilder, Leaderboard) runs through this, so a player shows the **same number everywhere** regardless of coach count.
+- **`SCORE_TIERS` + `scoreTier(value)`** — maps an overall to its rubric tier; drives both the [`ScoringGuide`](src/pages/ScoringGuide.tsx) page and the inline tier tag.
+- **`<OverallScore value showTier />`** ([component](src/components/OverallScore.tsx)) — always renders the scale (`X.X / 10`) and, with `showTier`, the tier badge (e.g. `Average (AAA)`).
+- **`<ScoringRuler />`** ([component](src/components/ScoringRuler.tsx)) — the calibration strip above the evaluate sliders; tier zones laid out proportionally across the 1–10 domain so each sits above where that score lands.
+
 ---
 
 ## Evaluations: catcher rule
@@ -190,6 +213,8 @@ All slider scores reflect skill level relative to organized baseball competition
 - The hide is **UI-only**. The init effect still walks the full template, so any existing catcher scores survive the `upsert_evaluation` RPC (which does a full `scores = EXCLUDED.scores` replace, not a JSONB merge).
 - Side effect: non-catchers no longer save phantom default-`5` catcher slider values, so their leaderboard overalls reflect only categories they were actually evaluated on.
 - Hardcoded to the seeded `"catching"` id. If an org deletes/recreates the catcher category with a different id, the rule won't apply.
+
+**Loading saved scores:** `EvaluatePlayer` populates the form only once the saved-evaluation query *resolves* (tracked per-player via a ref), and `EvaluationSlider`/`EvaluationNumberInput` sync to value-prop changes. Don't reintroduce gating on a one-shot "initialized" flag set before the query resolves — that caused saved sliders to reset to the default 5 on reopen.
 
 ---
 
@@ -219,7 +244,7 @@ cd diamondaudit
 npm install
 ```
 
-The repo includes both `package-lock.json` and `bun.lock` / `bun.lockb`. **Pick one** — if sticking with npm, delete the bun lockfiles. Lovable used Bun by default.
+Uses npm (`package-lock.json`); the Lovable-era bun lockfiles have been removed.
 
 ### 2. Env vars
 
@@ -239,9 +264,11 @@ The `PUBLISHABLE_KEY` is the Supabase **publishable key** (`sb_publishable_...`)
 npm run dev      # http://localhost:8080 (per vite.config.ts)
 npm run build    # production build to ./dist
 npm run preview  # serve the build locally
-npm run lint     # ESLint
-npm run test     # Vitest (one-shot)
+npm run lint       # ESLint (0 warnings expected)
+npm run typecheck  # tsc --noEmit (strict) — the build does NOT type-check
+npm run test       # Vitest (one-shot)
 npm run test:watch
+npm run test:e2e   # Playwright (starts dev server, runs tests/e2e/)
 ```
 
 Playwright smoke specs live in `tests/e2e/` — run `npm run test:e2e` (or `npx playwright test`). Authenticated flows still need a seeded test account.
@@ -250,7 +277,7 @@ Playwright smoke specs live in `tests/e2e/` — run `npm run test:e2e` (or `npx 
 
 ## Lovable cleanup status
 
-All removed: `lovable-tagger` (config + dependency), broken Playwright config (replaced with vanilla `@playwright/test`), Lovable meta tags in `index.html`, OG image pointing to Lovable's CDN, generic `vite_react_shadcn_ts` package name, `bun.lock`/`bun.lockb`, "Welcome to your Lovable project" README. The `.env` file has been renamed to `.env.local` (gitignored) with a checked-in `.env.example`. The favicon is still a generic placeholder — replace when ready.
+All removed: `lovable-tagger` (config + dependency), broken Playwright config (replaced with vanilla `@playwright/test`), Lovable meta tags in `index.html`, OG image pointing to Lovable's CDN, generic `vite_react_shadcn_ts` package name, `bun.lock`/`bun.lockb`, "Welcome to your Lovable project" README, dead `placeholder.svg`. The `.env` file has been renamed to `.env.local` (gitignored) with a checked-in `.env.example`. Favicons are now properly sized (`favicon-32/192.png`, `apple-touch-icon.png`); the legacy `favicon.ico` remains as a fallback. The DA logo is the brand mark.
 
 ---
 
@@ -262,7 +289,9 @@ All removed: `lovable-tagger` (config + dependency), broken Playwright config (r
 - **Page structure:** every protected page renders `<AppLayout>{...}</AppLayout>`. AppLayout owns the sticky header (org switcher + user pill + sign-out) and the bottom nav.
 - **Mutations:** use React Query `useMutation`; on success, `qc.invalidateQueries({ queryKey: [...] })`.
 - **Toasts:** `import { toast } from "sonner"`.
-- **TypeScript:** loose mode (`strict: false`, `strictNullChecks: false`). When tightening this, expect a long list of fixes — do it incrementally per directory.
+- **TypeScript:** **strict mode** is on. Run `npm run typecheck` before committing — the Vite/SWC build skips type-checking, so type errors won't fail the build.
+- **Images:** use sized assets (`logo-256.png`, the favicons), not the 1 MB `logo.png`, in UI — that's reserved for `og:image`/`twitter:image`.
+- **Query errors** surface automatically via a global toast (QueryClient `queryCache.onError` in `App.tsx`); no need to handle per-query unless you want custom UX.
 
 ---
 
@@ -272,14 +301,17 @@ All removed: `lovable-tagger` (config + dependency), broken Playwright config (r
 - Deep links (e.g. `/players`, `/auth/recover`) load via the SPA rewrite — no Vercel 404.
 - Password reset flow: request from `/auth` → email arrives → link lands on `/auth/recover` → password update succeeds → sign-in works.
 - Catcher-category hide rule live in `EvaluatePlayer`.
+- Scoring: consistent `X.X / 10` + tier labels across all screens; Scoring Guide page; calibration ruler on the evaluate page; evaluate save→reopen keeps saved scores (the reset bug is fixed).
+- Security migrations 7 & 8 applied to prod and verified (authenticated RLS intact; anon can no longer call the SECURITY DEFINER helpers).
+- Lighthouse on the deployed site: Accessibility/Best-Practices/SEO = 100, Performance ~80.
 
 ## Known gaps
 
 - **Invite emails**: implemented via the `supabase/functions/send-invite` Edge Function (Resend), with copy-link fallback. **Not live until** its secrets are set and it's deployed — see [`supabase/functions/send-invite/README.md`](supabase/functions/send-invite/README.md) (`RESEND_API_KEY`, `INVITE_FROM_EMAIL`, `SITE_URL`, verify a sending domain, `supabase functions deploy send-invite`).
 - **`tryout_events` table**: intentionally retained for a planned event/session-scheduling feature; no UI uses it yet. Keep until that feature is built (or drop the table + its generated types if shelved).
-- **Auth: leaked-password protection** is disabled. Enable it in Supabase → Authentication → Policies (HaveIBeenPwned check). Dashboard-only toggle; not in code.
-- **Pending DB migration**: `supabase/migrations/20260608000000_lock_down_fn_grants_and_org_insert.sql` (revokes anon/PUBLIC EXECUTE on SECURITY DEFINER helpers, tightens `organizations` INSERT) — committed but **apply to prod still pending**.
-- Generic placeholder favicon.
+- **Auth: leaked-password protection** is disabled. Enable it in Supabase → Authentication → Policies (HaveIBeenPwned check). Dashboard-only toggle; not in code. *(Only open security-advisor item; the remaining "authenticated can execute SECURITY DEFINER" advisor warnings are inherent to the RLS-helper pattern and can't be removed without breaking RLS.)*
+- **Performance headroom**: deployed Lighthouse is ~80 (a11y/best-practices/SEO all 100). LCP is down to ~4 s after the logo fix; further gains need render-blocking-CSS/font tuning and finer code-splitting — diminishing returns.
+- **No seeded test account** for authenticated E2E — Playwright covers only the public/auth surface so far.
 
 ## Testing
 
