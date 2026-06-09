@@ -22,7 +22,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-lg border-b">
         <div className="container flex items-center justify-between h-14">
           <Link to="/" className="flex items-center gap-2">
-            <img src="/logo.png" alt="DiamondAudit" className="h-9 w-auto" />
+            <img src="/logo-256.png" alt="DiamondAudit" className="h-9 w-auto" />
           </Link>
           <div className="flex items-center gap-2">
             <Link to="/scoring-guide" title="Scoring guide" aria-label="Scoring guide"
