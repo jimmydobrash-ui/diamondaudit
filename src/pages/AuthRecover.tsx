@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Lock, KeyRound } from "lucide-react";
@@ -88,7 +87,7 @@ export default function AuthRecover() {
 
   return (
     <div role="main" className="min-h-screen bg-background flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
+      <div className="w-full max-w-sm animate-slide-up">
         <div className="text-center mb-8">
           <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <KeyRound className="w-6 h-6 text-primary" />
@@ -130,7 +129,7 @@ export default function AuthRecover() {
             {loading ? "Updating…" : "Update password"}
           </button>
         </form>
-      </motion.div>
+      </div>
     </div>
   );
 }

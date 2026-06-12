@@ -23,7 +23,14 @@ export default defineConfig({
         // Split heavy, rarely-changing vendor libs into their own cacheable
         // chunks so a route page change doesn't bust the whole bundle.
         manualChunks: {
-          "react-vendor": ["react", "react-dom", "react-router-dom"],
+          // Keep the JSX runtime with react so it doesn't get parked in the
+          // motion chunk — otherwise every page pulls framer-motion just for JSX.
+          "react-vendor": [
+            "react",
+            "react-dom",
+            "react-router-dom",
+            "react/jsx-runtime",
+          ],
           motion: ["framer-motion"],
         },
       },
