@@ -18,7 +18,7 @@ import {
   calcCategoryAvg,
   visibleEvalCategories,
 } from "@/lib/scoring";
-import { ArrowLeft, ClipboardList, Users, Trash2 } from "lucide-react";
+import { ArrowLeft, ClipboardList, Users, Trash2, Pencil } from "lucide-react";
 
 type Scores = Record<string, number>;
 
@@ -103,6 +103,11 @@ export default function PlayerDetail() {
               </div>
             )}
           </div>
+          {role === "admin" && player && (
+            <Link to={`/players/${playerId}/edit`} aria-label="Edit player" className="touch-target flex items-center justify-center text-muted-foreground hover:text-foreground">
+              <Pencil className="w-4 h-4" />
+            </Link>
+          )}
         </motion.div>
 
         {/* Team consensus */}

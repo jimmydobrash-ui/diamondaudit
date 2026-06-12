@@ -13,6 +13,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 const Index = lazy(() => import("./pages/Index"));
 const Players = lazy(() => import("./pages/Players"));
 const AddPlayer = lazy(() => import("./pages/AddPlayer"));
+const EditPlayer = lazy(() => import("./pages/EditPlayer"));
 const ImportPlayers = lazy(() => import("./pages/ImportPlayers"));
 const EvaluateList = lazy(() => import("./pages/EvaluateList"));
 const EvaluatePlayer = lazy(() => import("./pages/EvaluatePlayer"));
@@ -64,6 +65,7 @@ const AppRoutes = () => (
       <Route path="/players/add" element={<ProtectedRoute><AddPlayer /></ProtectedRoute>} />
       <Route path="/players/import" element={<ProtectedRoute><ImportPlayers /></ProtectedRoute>} />
       <Route path="/players/:playerId" element={<ProtectedRoute><PlayerDetail /></ProtectedRoute>} />
+      <Route path="/players/:playerId/edit" element={<ProtectedRoute><EditPlayer /></ProtectedRoute>} />
       <Route path="/evaluate" element={<ProtectedRoute><EvaluateList /></ProtectedRoute>} />
       <Route path="/evaluate/:playerId" element={<ProtectedRoute><EvaluatePlayer /></ProtectedRoute>} />
       <Route path="/team-builder" element={<ProtectedRoute><TeamBuilder /></ProtectedRoute>} />
