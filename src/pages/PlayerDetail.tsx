@@ -1,14 +1,16 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import AppLayout from "@/components/AppLayout";
 import OverallScore from "@/components/OverallScore";
 import GradeBadge from "@/components/GradeBadge";
-import { usePlayers } from "@/hooks/usePlayers";
+import { usePlayers, useDeletePlayer } from "@/hooks/usePlayers";
 import { useEvaluations } from "@/hooks/useEvaluations";
 import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
 import { usePlayerGrades, type PlayerGradeValue } from "@/hooks/usePlayerGrades";
 import { useOrgMembers } from "@/hooks/useOrgMembers";
+import { useAuth } from "@/hooks/useAuth";
 import { getAgeGroup } from "@/lib/mock-data";
 import {
   aggregateScoresByPlayer,
@@ -16,7 +18,7 @@ import {
   calcCategoryAvg,
   visibleEvalCategories,
 } from "@/lib/scoring";
-import { ArrowLeft, ClipboardList, Users } from "lucide-react";
+import { ArrowLeft, ClipboardList, Users, Trash2 } from "lucide-react";
 
 type Scores = Record<string, number>;
 
@@ -28,6 +30,9 @@ export default function PlayerDetail() {
   const { data: grades = [] } = usePlayerGrades();
   const { data: template } = useEvaluationTemplate();
   const { data: members = {} } = useOrgMembers();
+  const { role } = useAuth();
+  const deletePlayer = useDeletePlayer();
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const player = players.find(p => p.id === playerId);
   const categories = useMemo(() => template?.categories ?? [], [template]);
@@ -54,6 +59,17 @@ export default function PlayerDetail() {
   }, [playerEvals, playerId, categories, visibleCategories]);
 
   const isLoading = playersLoading || evalsLoading;
+
+  const handleDelete = async () => {
+    if (!playerId) return;
+    try {
+      await deletePlayer.mutateAsync(playerId);
+      toast.success("Player deleted");
+      navigate("/players");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    }
+  };
 
   if (!isLoading && !player) {
     return (
@@ -157,6 +173,39 @@ export default function PlayerDetail() {
           <ClipboardList className="w-4 h-4" />
           Evaluate player
         </Link>
+
+        {/* Delete (admin only) */}
+        {role === "admin" && (
+          confirmDelete ? (
+            <div className="bg-card rounded-xl p-4 card-elevated border border-destructive/30 space-y-3">
+              <p className="text-sm text-foreground">
+                Delete <strong>{player?.first_name} {player?.last_name}</strong>? This also removes their evaluations and grades and can't be undone.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="flex-1 h-10 rounded-xl bg-secondary text-foreground text-sm font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deletePlayer.isPending}
+                  className="flex-1 h-10 rounded-xl bg-destructive text-destructive-foreground text-sm font-semibold disabled:opacity-50"
+                >
+                  {deletePlayer.isPending ? "Deleting…" : "Delete player"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="w-full h-10 rounded-xl text-destructive text-sm font-medium flex items-center justify-center gap-2 hover:bg-destructive/10 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" /> Delete player
+            </button>
+          )
+        )}
       </div>
     </AppLayout>
   );
