@@ -6,9 +6,10 @@ import { usePlayers } from "@/hooks/usePlayers";
 import { useEvaluations } from "@/hooks/useEvaluations";
 import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
 import { getAgeGroup } from "@/lib/mock-data";
-import { calcSliderOverall, calcCategoryAvg, aggregateScoresByPlayer } from "@/lib/scoring";
+import { calcSliderOverall, calcCategoryAvg, aggregateScoresByPlayer, scoreTier } from "@/lib/scoring";
+import { toCsv, downloadCsv } from "@/lib/csv";
 import OverallScore from "@/components/OverallScore";
-import { BarChart3, Trophy } from "lucide-react";
+import { BarChart3, Trophy, Download } from "lucide-react";
 
 export default function Leaderboard() {
   const [sortBy, setSortBy] = useState("overall");
@@ -28,6 +29,12 @@ export default function Leaderboard() {
   const ageGroups = useMemo(() => {
     return [...new Set(players.map(p => getAgeGroup(p.date_of_birth)))].sort();
   }, [players]);
+
+  const evalCounts = useMemo(() => {
+    const m: Record<string, number> = {};
+    evaluations.forEach(e => { m[e.player_id] = (m[e.player_id] ?? 0) + 1; });
+    return m;
+  }, [evaluations]);
 
   const ranked = useMemo(() => {
     let list = [...players];
@@ -54,15 +61,55 @@ export default function Leaderboard() {
       });
   }, [players, playerAggregates, sortBy, ageFilter, categories]);
 
+  const handleExport = () => {
+    const headers = [
+      "Rank", "Jersey", "First Name", "Last Name", "Age Group", "Positions",
+      "Bats", "Throws", "Overall", "Tier",
+      ...categories.map(c => c.name),
+      "Evaluations",
+    ];
+    const rows = ranked.map((item, i) => {
+      const p = item.player;
+      const catVals = categories.map(c => item.categoryScores.find(cs => cs.id === c.id)?.avg ?? "");
+      return [
+        i + 1,
+        p.jersey_number ?? "",
+        p.first_name,
+        p.last_name,
+        getAgeGroup(p.date_of_birth),
+        p.positions.join(" / "),
+        p.bats,
+        p.throws,
+        item.overall,
+        scoreTier(item.overall)?.label ?? "",
+        ...catVals,
+        evalCounts[p.id] ?? 0,
+      ];
+    });
+    const scope = ageFilter === "all" ? "all" : ageFilter;
+    const date = new Date().toISOString().slice(0, 10);
+    downloadCsv(`diamondaudit-leaderboard-${scope}-${date}.csv`, toCsv(headers, rows));
+  };
+
   return (
     <AppLayout>
       <div className="container py-6 space-y-4">
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="flex items-center gap-2 mb-1">
-            <BarChart3 className="w-5 h-5 text-primary" />
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">Leaderboard</h1>
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex items-start justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <BarChart3 className="w-5 h-5 text-primary" />
+              <h1 className="text-2xl font-bold text-foreground tracking-tight">Leaderboard</h1>
+            </div>
+            <p className="text-sm text-muted-foreground">Rankings by evaluation scores</p>
           </div>
-          <p className="text-sm text-muted-foreground">Rankings by evaluation scores</p>
+          {ranked.length > 0 && (
+            <button
+              onClick={handleExport}
+              className="h-9 px-3 rounded-lg bg-secondary text-foreground text-xs font-medium flex items-center gap-1.5 flex-shrink-0 hover:bg-secondary/70 transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" /> Export CSV
+            </button>
+          )}
         </motion.div>
 
         <div className="space-y-2">
