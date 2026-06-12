@@ -316,5 +316,5 @@ All removed: `lovable-tagger` (config + dependency), broken Playwright config (r
 ## Testing
 
 - Unit/component tests: `npm test` (Vitest + Testing Library). Covers `lib/scoring` and the evaluation inputs/score display.
-- E2E: `npm run test:e2e` (Playwright, specs in `tests/e2e/`). Smoke specs cover auth redirect + sign-in render; authenticated flows need a seeded test account.
+- E2E: `npm run test:e2e` (Playwright, specs in `tests/e2e/`). Public smoke specs (auth redirect, sign-in render) always run. Authenticated specs (`authenticated.spec.ts` — login + navigate the signed-in shell) **skip unless** `TEST_USER_EMAIL` / `TEST_USER_PASSWORD` are set: `TEST_USER_EMAIL=… TEST_USER_PASSWORD=… npm run test:e2e`. A data-mutating flow (add player → evaluate → save → reopen) is intentionally not automated against prod — it needs a dedicated test org/DB; the save/reopen regression is covered at unit level by the evaluation-input component tests.
 - Types: `npm run typecheck` (strict; the Vite/SWC build does **not** type-check).
