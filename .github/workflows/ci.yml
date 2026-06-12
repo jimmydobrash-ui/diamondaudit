@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel superseded runs on the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Placeholder Supabase env so the client constructs and the app boots during
+# build / public e2e. CI never connects to a real project (the public smoke
+# specs only exercise routing + the auth page).
+env:
+  VITE_SUPABASE_PROJECT_ID: ci
+  VITE_SUPABASE_URL: https://ci.supabase.co
+  VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
+
+jobs:
+  checks:
+    name: Lint · Typecheck · Test · Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run build
+
+  e2e:
+    name: Playwright (public smoke)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      # Authenticated specs skip without TEST_USER_* secrets; the public
+      # smoke specs run. The Playwright config starts the dev server itself.
+      - run: npm run test:e2e
