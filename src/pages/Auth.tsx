@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Mail, Lock, UserPlus, LogIn, ArrowLeft, Send } from "lucide-react";
@@ -64,7 +63,7 @@ export default function Auth() {
   if (mode === "confirmation-sent" || mode === "reset-sent") {
     return (
       <div role="main" className="min-h-screen bg-background flex items-center justify-center p-4">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm text-center space-y-4">
+        <div className="w-full max-w-sm text-center space-y-4 animate-slide-up">
           <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
             <Mail className="w-6 h-6 text-primary" />
           </div>
@@ -80,7 +79,7 @@ export default function Auth() {
           >
             Back to sign in
           </button>
-        </motion.div>
+        </div>
       </div>
     );
   }
@@ -96,11 +95,7 @@ export default function Auth() {
 
   return (
     <div role="main" className="min-h-screen bg-background flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm"
-      >
+      <div className="w-full max-w-sm animate-slide-up">
         <div className="text-center mb-8">
           <img src="/logo-256.png" alt="DiamondAudit" width={128} height={128} className="w-32 h-32 mx-auto mb-2 object-contain" />
           <p className="text-sm text-muted-foreground mt-1">{subhead}</p>
@@ -207,7 +202,7 @@ export default function Auth() {
             {mode === "signup" ? "Already have an account? Sign in" : "Need an account? Sign up"}
           </button>
         )}
-      </motion.div>
+      </div>
     </div>
   );
 }
