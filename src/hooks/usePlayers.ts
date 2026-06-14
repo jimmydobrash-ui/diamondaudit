@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
-import type { Tables, TablesInsert } from "@/integrations/supabase/types";
+import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
 export type Player = Tables<"players">;
 export type PlayerInsert = TablesInsert<"players">;
+export type PlayerUpdate = TablesUpdate<"players">;
 
 export function usePlayers() {
   const { organizationId } = useAuth();
@@ -68,6 +69,17 @@ export function useDeletePlayer() {
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("players").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["players"] }),
+  });
+}
+
+export function useUpdatePlayer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Omit<PlayerUpdate, "id" | "organization_id"> }) => {
+      const { error } = await supabase.from("players").update(updates).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["players"] }),
