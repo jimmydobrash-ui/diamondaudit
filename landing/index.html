@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DiamondAudit — Tryout scoring built for baseball</title>
+    <meta
+      name="description"
+      content="DiamondAudit gives your whole staff one scoring standard, one shared leaderboard, and a record behind every cut. Tryout scoring for baseball and softball programs."
+    />
+
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="DiamondAudit — Tryout scoring built for baseball" />
+    <meta
+      property="og:description"
+      content="One scoring standard, one shared leaderboard, and a record behind every cut."
+    />
+    <meta property="og:image" content="/logo-256.png" />
+    <meta name="twitter:card" content="summary" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!--
+      Domain plan: marketing site at diamondaudit.io (root), app at
+      app.diamondaudit.io. Every "Request access" / "Sign in" link points to the
+      app at https://app.diamondaudit.io/auth. If the app host ever changes,
+      find-replace that one value. Assets use root-relative paths (portable).
+      NOTE: app.diamondaudit.io must be live before diamondaudit.io's root is
+      switched from the app to this landing page (see cutover steps).
+    -->
+    <style>
+      :root {
+        --bg: #0b0e13;
+        --bg-soft: #11151c;
+        --surface: #151a22;
+        --border: #232a34;
+        --text: #e8eaed;
+        --muted: #98a2b0;
+        --accent: #ef4444;
+        --accent-strong: #dc2626;
+        --accent-soft: rgba(239, 68, 68, 0.12);
+        --radius: 14px;
+        --maxw: 1080px;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html { scroll-behavior: smooth; }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      h1, h2, h3 { font-family: "Space Grotesk", "Inter", sans-serif; line-height: 1.1; letter-spacing: -0.02em; }
+      a { color: inherit; text-decoration: none; }
+      .container { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+      .accent { color: var(--accent); }
+
+      /* Buttons */
+      .btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        font-weight: 600; font-size: 15px; border-radius: 10px;
+        padding: 12px 20px; transition: all 0.15s ease; cursor: pointer; border: 1px solid transparent;
+      }
+      .btn-primary { background: var(--accent); color: #fff; }
+      .btn-primary:hover { background: var(--accent-strong); transform: translateY(-1px); }
+      .btn-ghost { color: var(--text); border-color: var(--border); background: transparent; }
+      .btn-ghost:hover { border-color: var(--muted); }
+      .btn-text { color: var(--muted); font-weight: 500; }
+      .btn-text:hover { color: var(--text); }
+
+      /* Header */
+      header { position: sticky; top: 0; z-index: 50; background: rgba(11, 14, 19, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+      .nav { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+      .brand { display: flex; align-items: center; gap: 10px; font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 18px; }
+      .brand img { height: 30px; width: auto; }
+      .nav-right { display: flex; align-items: center; gap: 18px; }
+
+      /* Hero */
+      .hero { padding: 84px 0 72px; border-bottom: 1px solid var(--border); }
+      .hero-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center; }
+      .eyebrow { display: inline-block; font-size: 13px; font-weight: 600; color: var(--accent); background: var(--accent-soft); padding: 5px 12px; border-radius: 999px; margin-bottom: 22px; letter-spacing: 0.01em; }
+      .hero h1 { font-size: 48px; font-weight: 700; margin-bottom: 20px; }
+      .hero p.sub { font-size: 18px; color: var(--muted); max-width: 540px; margin-bottom: 30px; }
+      .hero-cta { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+      /* Hero results mock */
+      .mock { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: 0 30px 60px -20px rgba(0,0,0,0.6); }
+      .mock-head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
+      .mock-title { font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 14px; }
+      .mock-tag { font-size: 11px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 3px 9px; }
+      .row { display: flex; align-items: center; gap: 12px; padding: 9px 6px; border-radius: 8px; }
+      .row + .row { border-top: 1px solid rgba(35,42,52,0.6); }
+      .rank { width: 18px; text-align: center; color: var(--muted); font-weight: 600; font-size: 13px; }
+      .rank.top { color: var(--accent); }
+      .pill { width: 30px; height: 30px; border-radius: 8px; background: var(--bg-soft); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; flex-shrink: 0; }
+      .who { flex: 1; min-width: 0; }
+      .who .name { font-size: 14px; font-weight: 500; }
+      .who .meta { font-size: 11px; color: var(--muted); }
+      .score { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 16px; }
+      .score small { color: var(--muted); font-weight: 400; font-size: 11px; }
+      .tier { font-size: 10px; color: var(--muted); text-align: right; }
+
+      /* Sections */
+      section { padding: 80px 0; }
+      .section-head { max-width: 620px; margin-bottom: 48px; }
+      .section-head h2 { font-size: 34px; font-weight: 700; margin-bottom: 14px; }
+      .section-head p { color: var(--muted); font-size: 17px; }
+
+      /* Feature grid */
+      .features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+      .feature { background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--radius); padding: 26px; }
+      .feature h3 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+      .feature p { color: var(--muted); font-size: 15px; }
+      .feature .dot { width: 9px; height: 9px; border-radius: 999px; background: var(--accent); display: inline-block; margin-bottom: 16px; }
+
+      /* Steps */
+      .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; counter-reset: step; }
+      .step { position: relative; padding-top: 8px; }
+      .step .num { font-family: "Space Grotesk", sans-serif; font-size: 15px; font-weight: 700; color: var(--accent); border: 1px solid var(--border); width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 18px; }
+      .step h3 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+      .step p { color: var(--muted); font-size: 15px; }
+
+      /* Why */
+      .why { background: var(--bg-soft); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+      .why .container { max-width: 760px; text-align: center; }
+      .why h2 { font-size: 30px; margin-bottom: 18px; }
+      .why p { color: var(--muted); font-size: 18px; }
+
+      /* Closing CTA */
+      .closing { text-align: center; }
+      .closing h2 { font-size: 36px; margin-bottom: 14px; }
+      .closing p { color: var(--muted); font-size: 17px; margin-bottom: 28px; }
+      .closing .note { font-size: 13px; color: var(--muted); margin-top: 18px; }
+
+      /* Footer */
+      footer { border-top: 1px solid var(--border); padding: 32px 0; }
+      .foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+      .foot .brand-sm { font-family: "Space Grotesk", sans-serif; font-weight: 600; }
+      .foot-links { display: flex; gap: 20px; font-size: 14px; color: var(--muted); }
+      .foot-links a:hover { color: var(--text); }
+
+      @media (max-width: 860px) {
+        .hero-grid { grid-template-columns: 1fr; gap: 40px; }
+        .hero h1 { font-size: 38px; }
+        .features, .steps { grid-template-columns: 1fr; }
+        .nav-right .btn-ghost { display: none; }
+        section { padding: 60px 0; }
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <div class="container nav">
+        <a class="brand" href="/">
+          <img src="/logo-256.png" alt="DiamondAudit" />
+          <span>DiamondAudit</span>
+        </a>
+        <div class="nav-right">
+          <a class="btn-text" href="#how">How it works</a>
+          <a class="btn-text" href="https://app.diamondaudit.io/auth">Sign in</a>
+          <a class="btn btn-primary" href="https://app.diamondaudit.io/auth">Request access →</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <span class="eyebrow">For baseball &amp; softball programs</span>
+          <h1>Tryout scoring built for baseball, run from any device.</h1>
+          <p class="sub">
+            DiamondAudit gives your whole staff one scoring standard, rolls every coach's evaluation
+            into one shared leaderboard, and leaves a record behind every cut. No clipboards, no
+            arguing over whose 7 means what.
+          </p>
+          <div class="hero-cta">
+            <a class="btn btn-primary" href="https://app.diamondaudit.io/auth">Request access →</a>
+            <a class="btn btn-ghost" href="#how">See how it works</a>
+          </div>
+        </div>
+
+        <!-- Results preview (illustrative) -->
+        <div class="mock" aria-hidden="true">
+          <div class="mock-head">
+            <span class="mock-title">Leaderboard · 14U</span>
+            <span class="mock-tag">3 coaches · live</span>
+          </div>
+          <div class="row">
+            <span class="rank top">1</span>
+            <span class="pill">#7</span>
+            <span class="who"><div class="name">Marcus Johnson</div><div class="meta">P, SS</div></span>
+            <span><div class="score">8.4<small> / 10</small></div><div class="tier">Above Avg</div></span>
+          </div>
+          <div class="row">
+            <span class="rank">2</span>
+            <span class="pill">#23</span>
+            <span class="who"><div class="name">Eli Carter</div><div class="meta">C, 1B</div></span>
+            <span><div class="score">7.1<small> / 10</small></div><div class="tier">Above Avg</div></span>
+          </div>
+          <div class="row">
+            <span class="rank">3</span>
+            <span class="pill">#4</span>
+            <span class="who"><div class="name">Jordan Diaz</div><div class="meta">2B, OF</div></span>
+            <span><div class="score">5.9<small> / 10</small></div><div class="tier">Average</div></span>
+          </div>
+          <div class="row">
+            <span class="rank">4</span>
+            <span class="pill">#15</span>
+            <span class="who"><div class="name">Sam Whitfield</div><div class="meta">OF</div></span>
+            <span><div class="score">5.2<small> / 10</small></div><div class="tier">Average</div></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WHAT IT DOES -->
+    <section>
+      <div class="container">
+        <div class="section-head">
+          <h2>One standard. One scoreboard. One record.</h2>
+          <p>The same evaluation for every athlete — and something to point to when a decision gets questioned.</p>
+        </div>
+        <div class="features">
+          <div class="feature">
+            <span class="dot"></span>
+            <h3>Standardize the scoring</h3>
+            <p>Build one template — the skills you care about, scored on a calibrated 0–10 scale with the rubric on screen. Every athlete, judged the same way.</p>
+          </div>
+          <div class="feature">
+            <span class="dot"></span>
+            <h3>Your whole staff, one number</h3>
+            <p>Coaches evaluate the same players independently. DiamondAudit rolls their scores into one number — and keeps each coach's view when you need to compare.</p>
+          </div>
+          <div class="feature">
+            <span class="dot"></span>
+            <h3>One results view</h3>
+            <p>A single ranked leaderboard you can filter by age, sort by skill, and export to CSV — instead of ten clipboards and a group text.</p>
+          </div>
+          <div class="feature">
+            <span class="dot"></span>
+            <h3>A record behind every cut</h3>
+            <p>Every score is saved, per coach, per player. When a decision gets questioned, you have the evaluation to point to.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section id="how" style="background: var(--bg-soft); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+      <div class="container">
+        <div class="section-head">
+          <h2>How it works</h2>
+          <p>Set it up once, then run the whole tryout from your phones.</p>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <div class="num">1</div>
+            <h3>Set your template</h3>
+            <p>Choose the skills you score and the scale you score them on. Catchers, pitchers, position players — calibrate it once.</p>
+          </div>
+          <div class="step">
+            <div class="num">2</div>
+            <h3>Score every athlete</h3>
+            <p>Your staff evaluates on phones or tablets against the same rubric, then grades each athlete Offer, Bubble, or Pass.</p>
+          </div>
+          <div class="step">
+            <div class="num">3</div>
+            <h3>Decide with the results</h3>
+            <p>Watch the leaderboard fill in, build your roster, and export the record — defensible the moment someone asks.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WHY THIS EXISTS -->
+    <section class="why">
+      <div class="container">
+        <h2>Why this exists</h2>
+        <p>
+          Built by a coach who got tired of defending tryout cuts with a stack of clipboards. Tryouts
+          move fast, every coach scores a little differently, and the results are hard to stand behind
+          when a player or parent asks why. DiamondAudit makes the scoring consistent and the outcome a
+          record — so the hard calls hold up.
+        </p>
+      </div>
+    </section>
+
+    <!-- CLOSING CTA -->
+    <section class="closing">
+      <div class="container">
+        <h2>Run your next tryout on the record.</h2>
+        <p>DiamondAudit is invite-only while we onboard programs one at a time.</p>
+        <div class="hero-cta" style="justify-content: center;">
+          <a class="btn btn-primary" href="https://app.diamondaudit.io/auth">Request access →</a>
+          <a class="btn btn-ghost" href="https://app.diamondaudit.io/auth">Sign in</a>
+        </div>
+        <p class="note">Tell us about your program and we'll get you set up.</p>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+      <div class="container foot">
+        <span class="brand-sm">DiamondAudit</span>
+        <div class="foot-links">
+          <span>© DoDiDe LLC</span>
+          <a href="/privacy.html">Privacy</a>
+          <a href="/terms.html">Terms</a>
+          <a href="https://app.diamondaudit.io/auth">Sign in</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
