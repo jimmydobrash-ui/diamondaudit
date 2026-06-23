@@ -1,0 +1,35 @@
+name: DB Backup
+
+on:
+  schedule:
+    - cron: "0 7 * * *" # daily at 07:00 UTC
+  workflow_dispatch: {} # allow manual runs
+
+jobs:
+  backup:
+    name: pg_dump → artifact
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump database (Postgres 17 via Docker)
+        env:
+          # Set this repo secret to the Supabase **Session pooler** connection
+          # string (Project → Connect → Session pooler → URI). The direct
+          # connection is IPv6-only and won't work from GitHub's IPv4 runners.
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::SUPABASE_DB_URL secret is not set — add it in repo Settings → Secrets → Actions."
+            exit 1
+          fi
+          ts=$(date +%Y%m%d-%H%M%S)
+          # Pin pg_dump to v17 so it matches the Supabase server version.
+          docker run --rm postgres:17 pg_dump "$SUPABASE_DB_URL" \
+            --format=custom --no-owner --no-privileges > "diamondaudit-${ts}.dump"
+          ls -lh diamondaudit-*.dump
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: diamondaudit-*.dump
+          retention-days: 30
