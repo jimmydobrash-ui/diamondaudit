@@ -30,10 +30,12 @@
     />
 
     <!--
-      Portability: every "Request access" / "Sign in" link points to APP_URL below.
-      When the app moves to app.diamondaudit.app, find-replace https://diamondaudit.io
-      with https://app.diamondaudit.app. Marketing domain (diamondaudit.app/.com) is
-      domain-agnostic — assets use root-relative paths.
+      Domain plan: marketing site at diamondaudit.io (root), app at
+      app.diamondaudit.io. Every "Request access" / "Sign in" link points to the
+      app at https://app.diamondaudit.io/auth. If the app host ever changes,
+      find-replace that one value. Assets use root-relative paths (portable).
+      NOTE: app.diamondaudit.io must be live before diamondaudit.io's root is
+      switched from the app to this landing page (see cutover steps).
     -->
     <style>
       :root {
@@ -166,8 +168,8 @@
         </a>
         <div class="nav-right">
           <a class="btn-text" href="#how">How it works</a>
-          <a class="btn-text" href="https://diamondaudit.io/auth">Sign in</a>
-          <a class="btn btn-primary" href="https://diamondaudit.io/auth">Request access →</a>
+          <a class="btn-text" href="https://app.diamondaudit.io/auth">Sign in</a>
+          <a class="btn btn-primary" href="https://app.diamondaudit.io/auth">Request access →</a>
         </div>
       </div>
     </header>
@@ -184,7 +186,7 @@
             arguing over whose 7 means what.
           </p>
           <div class="hero-cta">
-            <a class="btn btn-primary" href="https://diamondaudit.io/auth">Request access →</a>
+            <a class="btn btn-primary" href="https://app.diamondaudit.io/auth">Request access →</a>
             <a class="btn btn-ghost" href="#how">See how it works</a>
           </div>
         </div>
@@ -301,8 +303,8 @@
         <h2>Run your next tryout on the record.</h2>
         <p>DiamondAudit is invite-only while we onboard programs one at a time.</p>
         <div class="hero-cta" style="justify-content: center;">
-          <a class="btn btn-primary" href="https://diamondaudit.io/auth">Request access →</a>
-          <a class="btn btn-ghost" href="https://diamondaudit.io/auth">Sign in</a>
+          <a class="btn btn-primary" href="https://app.diamondaudit.io/auth">Request access →</a>
+          <a class="btn btn-ghost" href="https://app.diamondaudit.io/auth">Sign in</a>
         </div>
         <p class="note">Tell us about your program and we'll get you set up.</p>
       </div>
@@ -314,9 +316,9 @@
         <span class="brand-sm">DiamondAudit</span>
         <div class="foot-links">
           <span>© DoDiDe LLC</span>
-          <a href="/privacy">Privacy</a>
-          <a href="/terms">Terms</a>
-          <a href="https://diamondaudit.io/auth">Sign in</a>
+          <a href="/privacy.html">Privacy</a>
+          <a href="/terms.html">Terms</a>
+          <a href="https://app.diamondaudit.io/auth">Sign in</a>
         </div>
       </div>
     </footer>
