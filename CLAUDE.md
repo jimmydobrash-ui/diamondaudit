@@ -1,3 +1,12 @@
+---
+title: DiamondAudit — CLAUDE.md
+project: DiamondAudit
+app_url: https://app.diamondaudit.io
+marketing_url: https://diamondaudit.io
+repo: https://github.com/jimmydobrash-ui/diamondaudit
+updated: 2026-06-23
+---
+
 # DiamondAudit — CLAUDE.md
 
 > Originally generated in [Lovable](https://lovable.dev) and pushed to GitHub. Now being developed locally with Claude Code. Self-hosted Supabase project (no longer using Lovable's provisioned backend).
@@ -38,9 +47,13 @@
 
 ## Deployment
 
-- **Production**: [diamondaudit.io](https://diamondaudit.io) (root + `www`) — Cloudflare DNS pointing to Vercel.
-- **Hosting**: Vercel static build from `main`. `vercel.json` rewrites all paths to `/index.html` so React Router handles deep links (password reset, future invite URLs, direct navigation). Static assets under `dist/` are served before the rewrite.
-- **Supabase Auth URL config**: Site URL and additional redirect URLs are set for `https://diamondaudit.io` so password reset / signup confirmation emails point to production, not localhost.
+**Two sites, both built from this one repo** (split done 2026-06-23, mirroring DiamondReps):
+
+- **Marketing landing** — `diamondaudit.io` (root + `www`). A static page in [`landing/`](landing/) (no build step), its own Vercel project. [`landing/vercel.json`](landing/vercel.json) redirects old app paths (`/auth`, `/players`, `/evaluate`, `/team-builder`, `/leaderboard`, `/settings`, `/scoring-guide`) to the app subdomain so pre-cutover links and already-sent reset emails don't 404.
+- **App** — `app.diamondaudit.io`. The Vite SPA (`src/`), its own Vercel project, auto-deploys from `main`. Root [`vercel.json`](vercel.json) rewrites all paths to `/index.html` for React Router deep links.
+- Both Vercel projects watch `main`: the app project builds `src/` (ignores `landing/`); the marketing project serves `landing/` (ignores `src/`). Every push deploys both.
+- **DNS**: Cloudflare → Vercel.
+- **Supabase Auth URL config**: Site URL = `https://app.diamondaudit.io` (+ matching redirect URLs) so password-reset / confirmation / invite emails point to the app host. When `send-invite` is deployed, set its `SITE_URL` secret to `https://app.diamondaudit.io`.
 
 ---
 
@@ -297,7 +310,7 @@ All removed: `lovable-tagger` (config + dependency), broken Playwright config (r
 
 ## Verified working on production
 
-- Custom domain `diamondaudit.io` (root + `www`) resolves to the Vercel deployment.
+- `diamondaudit.io` (root + `www`) serves the marketing landing; `app.diamondaudit.io` serves the app — both verified live, with old-app-path redirects working.
 - Deep links (e.g. `/players`, `/auth/recover`) load via the SPA rewrite — no Vercel 404.
 - Password reset flow: request from `/auth` → email arrives → link lands on `/auth/recover` → password update succeeds → sign-in works.
 - Catcher-category hide rule live in `EvaluatePlayer`.
