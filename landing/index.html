@@ -93,22 +93,18 @@
       .hero p.sub { font-size: 18px; color: var(--muted); max-width: 540px; margin-bottom: 30px; }
       .hero-cta { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 
-      /* Hero results mock */
-      .mock { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: 0 30px 60px -20px rgba(0,0,0,0.6); }
-      .mock-head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
-      .mock-title { font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 14px; }
-      .mock-tag { font-size: 11px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 3px 9px; }
-      .row { display: flex; align-items: center; gap: 12px; padding: 9px 6px; border-radius: 8px; }
-      .row + .row { border-top: 1px solid rgba(35,42,52,0.6); }
-      .rank { width: 18px; text-align: center; color: var(--muted); font-weight: 600; font-size: 13px; }
-      .rank.top { color: var(--accent); }
-      .pill { width: 30px; height: 30px; border-radius: 8px; background: var(--bg-soft); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; flex-shrink: 0; }
-      .who { flex: 1; min-width: 0; }
-      .who .name { font-size: 14px; font-weight: 500; }
-      .who .meta { font-size: 11px; color: var(--muted); }
-      .score { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 16px; }
-      .score small { color: var(--muted); font-weight: 400; font-size: 11px; }
-      .tier { font-size: 10px; color: var(--muted); text-align: right; }
+      /* Product screenshots */
+      .shot { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface); box-shadow: 0 30px 60px -20px rgba(0,0,0,0.6); }
+      .shot img { display: block; width: 100%; height: auto; }
+
+      /* Showcase: large desktop shot beside a phone shot */
+      .showcase { display: grid; grid-template-columns: 1.55fr 0.62fr; gap: 28px; align-items: center; }
+      .shot-phone { border-radius: 28px; box-shadow: 0 30px 60px -20px rgba(0,0,0,0.75); }
+      .shot-band { margin-top: 44px; }
+      @media (max-width: 860px) {
+        .showcase { grid-template-columns: 1fr; gap: 28px; }
+        .shot-phone { max-width: 270px; margin: 0 auto; }
+      }
 
       /* Sections */
       section { padding: 80px 0; }
@@ -191,36 +187,15 @@
           </div>
         </div>
 
-        <!-- Results preview (illustrative) -->
-        <div class="mock" aria-hidden="true">
-          <div class="mock-head">
-            <span class="mock-title">Leaderboard · 14U</span>
-            <span class="mock-tag">3 coaches · live</span>
-          </div>
-          <div class="row">
-            <span class="rank top">1</span>
-            <span class="pill">#7</span>
-            <span class="who"><div class="name">Marcus Johnson</div><div class="meta">P, SS</div></span>
-            <span><div class="score">8.4<small> / 10</small></div><div class="tier">Above Avg</div></span>
-          </div>
-          <div class="row">
-            <span class="rank">2</span>
-            <span class="pill">#23</span>
-            <span class="who"><div class="name">Eli Carter</div><div class="meta">C, 1B</div></span>
-            <span><div class="score">7.1<small> / 10</small></div><div class="tier">Above Avg</div></span>
-          </div>
-          <div class="row">
-            <span class="rank">3</span>
-            <span class="pill">#4</span>
-            <span class="who"><div class="name">Jordan Diaz</div><div class="meta">2B, OF</div></span>
-            <span><div class="score">5.9<small> / 10</small></div><div class="tier">Average</div></span>
-          </div>
-          <div class="row">
-            <span class="rank">4</span>
-            <span class="pill">#15</span>
-            <span class="who"><div class="name">Sam Whitfield</div><div class="meta">OF</div></span>
-            <span><div class="score">5.2<small> / 10</small></div><div class="tier">Average</div></span>
-          </div>
+        <!-- Results preview (real product screenshot) -->
+        <div class="shot hero-shot">
+          <img
+            src="/screenshots/app-leaderboard.webp"
+            alt="DiamondAudit leaderboard ranking players by their combined evaluation score, with tier labels and age-group filters"
+            width="1280"
+            height="860"
+            fetchpriority="high"
+          />
         </div>
       </div>
     </section>
@@ -257,6 +232,39 @@
       </div>
     </section>
 
+    <!-- PRODUCT SHOWCASE -->
+    <section>
+      <div class="container">
+        <div class="section-head">
+          <h2>The same rubric in front of every coach.</h2>
+          <p>
+            Calibrated sliders with the scoring guide right on screen, and an Offer / Bubble / Pass
+            grade at the bottom — from a laptop at the table or a phone on the field.
+          </p>
+        </div>
+        <div class="showcase">
+          <div class="shot">
+            <img
+              src="/screenshots/app-evaluate.webp"
+              alt="DiamondAudit player evaluation screen with calibrated 1–10 sliders, the scoring rubric strip, and Offer/Bubble/Pass grade buttons"
+              width="1280"
+              height="860"
+              loading="lazy"
+            />
+          </div>
+          <div class="shot shot-phone">
+            <img
+              src="/screenshots/app-evaluate-mobile.webp"
+              alt="DiamondAudit evaluation screen on a phone, scoring a player on the field"
+              width="390"
+              height="844"
+              loading="lazy"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- HOW IT WORKS -->
     <section id="how" style="background: var(--bg-soft); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
       <div class="container">
@@ -280,6 +288,28 @@
             <h3>Decide with the results</h3>
             <p>Watch the leaderboard fill in, build your roster, and export the record — defensible the moment someone asks.</p>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESULTS SHOT -->
+    <section>
+      <div class="container">
+        <div class="section-head">
+          <h2>One board. Every grade. A record you can stand behind.</h2>
+          <p>
+            Sort the room into Offer, Bubble, and Pass — every call backed by the scores your staff
+            actually gave, ready to export the moment someone asks.
+          </p>
+        </div>
+        <div class="shot">
+          <img
+            src="/screenshots/app-team-builder.webp"
+            alt="DiamondAudit Team Builder showing players graded Offer, Bubble, or Pass with their evaluation scores and tiers"
+            width="1280"
+            height="860"
+            loading="lazy"
+          />
         </div>
       </div>
     </section>
