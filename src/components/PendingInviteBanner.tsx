@@ -12,9 +12,12 @@ interface Invite {
 }
 
 export default function PendingInviteBanner() {
-  const { user } = useAuth();
+  const { user, organizationId } = useAuth();
   const [invites, setInvites] = useState<Invite[]>([]);
 
+  // Re-run when `organizationId` resolves too: an invited signup is auto-joined
+  // by orgBootstrap *after* `user` is set, so keying only on `user` can capture
+  // a stale `pending` snapshot and show an Accept that's already been handled.
   useEffect(() => {
     if (!user?.email) return;
     (async () => {
@@ -25,23 +28,43 @@ export default function PendingInviteBanner() {
         .ilike("email", user.email!)
         .gt("expires_at", new Date().toISOString());
 
-      if (!data?.length) return;
+      if (!data?.length) {
+        setInvites([]);
+        return;
+      }
 
-      const orgIds = [...new Set(data.map(d => d.organization_id))];
+      // Drop invites for orgs the user already belongs to (e.g. auto-joined at
+      // signup) — showing Accept for those just produces a confusing error.
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("organization_id")
+        .eq("user_id", user.id);
+      const memberOrgs = new Set((roles ?? []).map(r => r.organization_id));
+      const open = data.filter(d => !memberOrgs.has(d.organization_id));
+
+      if (!open.length) {
+        setInvites([]);
+        return;
+      }
+
+      const orgIds = [...new Set(open.map(d => d.organization_id))];
       const { data: orgs } = await supabase
         .from("organizations")
         .select("id, name")
         .in("id", orgIds);
 
       const orgMap = Object.fromEntries((orgs ?? []).map(o => [o.id, o.name]));
-      setInvites(data.map(d => ({ ...d, org_name: orgMap[d.organization_id] })));
+      setInvites(open.map(d => ({ ...d, org_name: orgMap[d.organization_id] })));
     })();
-  }, [user]);
+  }, [user, organizationId]);
 
   const acceptInvite = async (invite: Invite) => {
     if (!user) return;
 
-    // Add user role
+    // Add user role. This can be rejected by RLS when the invite was already
+    // auto-accepted at signup (orgBootstrap) — the user then has a role *and*
+    // the invite is no longer `pending`, so neither INSERT policy path applies.
+    // That's a real failure only if we're not already a member of the org.
     const { error: roleErr } = await supabase.from("user_roles").insert({
       user_id: user.id,
       organization_id: invite.organization_id,
@@ -49,11 +72,22 @@ export default function PendingInviteBanner() {
     });
 
     if (roleErr && roleErr.code !== "23505") {
-      toast.error("Failed to accept invite");
-      return;
+      const { data: membership } = await supabase
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("organization_id", invite.organization_id)
+        .limit(1)
+        .maybeSingle();
+
+      if (!membership) {
+        toast.error("Failed to accept invite");
+        return;
+      }
+      // Already a member (auto-joined at signup) — fall through to success.
     }
 
-    // Mark invite as accepted
+    // Mark invite as accepted (best-effort; it may already be accepted)
     await supabase
       .from("organization_invites")
       .update({ status: "accepted" })

@@ -134,7 +134,7 @@ All tables have RLS enabled. Org isolation is enforced through SECURITY DEFINER 
 | `evaluation_templates` | per-org skill template | `categories` JSONB; one `is_default = true` per org |
 | `evaluations` | per-coach scores | `(player_id, coach_id, event_id)` unique; `scores` JSONB; `notes` |
 | `player_grades` | per-coach Offer/Bubble/Pass | `(player_id, coach_id)` unique; grade enum: `offer` \| `bubble` \| `pass` |
-| `organization_invites` | coach invite system (in-app only — see below) | `email`, `role`, `status`, `expires_at` (default 7d) |
+| `organization_invites` | coach invite system (in-app only — see below) | `email`, `role`, `status`, `expires_at` (default 14d via migration 9 — **prod still 7d until applied**) |
 
 **RLS rules of thumb:**
 - Members can `SELECT` anything in their org.
@@ -151,6 +151,7 @@ All tables have RLS enabled. Org isolation is enforced through SECURITY DEFINER 
 6. `20260507000000` — tightens profile RLS (org-scoped reads), fixes `evaluations` uniqueness with partial indexes, adds `upsert_evaluation` RPC
 7. `20260522000000_lock_down_role_invite_eval` — locks down `user_roles` INSERT (bootstrap-or-matching-invite only), an `organization_invites` immutability trigger, and player/event ownership checks in `upsert_evaluation`. **Applied to prod.**
 8. `20260608000000_lock_down_fn_grants_and_org_insert` — revokes anon/PUBLIC `EXECUTE` on the SECURITY DEFINER helpers (keeps `authenticated` for the RLS helpers + `upsert_evaluation`; internal trigger fns owner-only), and replaces the `organizations` INSERT `WITH CHECK (true)` with a first-org bootstrap check. **Applied to prod + verified (RLS intact).**
+9. `20260624000000_bump_invite_expiry_14d` — bumps the `organization_invites.expires_at` column default from 7d to 14d (new invites only). **NOT yet applied to prod** — run the `ALTER` in the SQL editor to sync.
 
 > **Note:** migrations are applied manually (via the Supabase MCP/SQL editor), not by a CI pipeline — the `supabase_migrations` tracking table is empty. Keep the `.sql` files and prod in sync by hand.
 
