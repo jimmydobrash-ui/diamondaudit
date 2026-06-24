@@ -1,0 +1,14 @@
+{
+  "redirects": [
+    { "source": "/auth", "destination": "https://app.diamondaudit.io/auth", "permanent": false },
+    { "source": "/auth/:path*", "destination": "https://app.diamondaudit.io/auth/:path*", "permanent": false },
+    { "source": "/players", "destination": "https://app.diamondaudit.io/players", "permanent": false },
+    { "source": "/players/:path*", "destination": "https://app.diamondaudit.io/players/:path*", "permanent": false },
+    { "source": "/evaluate", "destination": "https://app.diamondaudit.io/evaluate", "permanent": false },
+    { "source": "/evaluate/:path*", "destination": "https://app.diamondaudit.io/evaluate/:path*", "permanent": false },
+    { "source": "/team-builder", "destination": "https://app.diamondaudit.io/team-builder", "permanent": false },
+    { "source": "/leaderboard", "destination": "https://app.diamondaudit.io/leaderboard", "permanent": false },
+    { "source": "/settings/:path*", "destination": "https://app.diamondaudit.io/settings/:path*", "permanent": false },
+    { "source": "/scoring-guide", "destination": "https://app.diamondaudit.io/scoring-guide", "permanent": false }
+  ]
+}
