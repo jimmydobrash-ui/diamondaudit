@@ -1,105 +1,39 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import AppLayout from "@/components/AppLayout";
-import { useAddPlayersBatch } from "@/hooks/usePlayers";
+import { useAddPlayersBatch, usePlayers } from "@/hooks/usePlayers";
+import { parseRosterCsv, rosterDedupeKeys, type ParsedPlayer } from "@/lib/csvImport";
 import { ArrowLeft, Upload, FileText, Check, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-
-interface ParsedPlayer {
-  first_name: string;
-  last_name: string;
-  date_of_birth: string;
-  positions: string[];
-  bats: string;
-  throws: string;
-  height: string | null;
-  weight: number | null;
-  jersey_number: number | null;
-  notes: string;
-}
-
-function parseCSV(text: string): { players: ParsedPlayer[]; errors: string[] } {
-  const lines = text.trim().split(/\r?\n/);
-  if (lines.length < 2) return { players: [], errors: ["CSV must have a header row and at least one data row"] };
-
-  const header = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/[^a-z_]/g, ""));
-  const players: ParsedPlayer[] = [];
-  const errors: string[] = [];
-
-  // Map common header variations
-  const colMap: Record<string, string> = {};
-  header.forEach((h, i) => {
-    if (["firstname", "first_name", "first"].includes(h)) colMap["first_name"] = String(i);
-    if (["lastname", "last_name", "last"].includes(h)) colMap["last_name"] = String(i);
-    if (["dob", "dateofbirth", "date_of_birth", "birthdate", "birthday"].includes(h)) colMap["date_of_birth"] = String(i);
-    if (["position", "positions", "pos"].includes(h)) colMap["positions"] = String(i);
-    if (["bats", "bat"].includes(h)) colMap["bats"] = String(i);
-    if (["throws", "throw"].includes(h)) colMap["throws"] = String(i);
-    if (["height", "ht"].includes(h)) colMap["height"] = String(i);
-    if (["weight", "wt"].includes(h)) colMap["weight"] = String(i);
-    if (["jersey", "jerseynumber", "jersey_number", "number", "num", "no"].includes(h)) colMap["jersey_number"] = String(i);
-    if (["notes", "note", "comments"].includes(h)) colMap["notes"] = String(i);
-  });
-
-  if (!colMap.first_name || !colMap.last_name) {
-    return { players: [], errors: ["CSV must have 'first_name' and 'last_name' columns"] };
-  }
-
-  for (let i = 1; i < lines.length; i++) {
-    const vals = lines[i].split(",").map(v => v.trim().replace(/^"|"$/g, ""));
-    const get = (key: string) => colMap[key] ? vals[Number(colMap[key])] || "" : "";
-
-    const firstName = get("first_name");
-    const lastName = get("last_name");
-    if (!firstName || !lastName) {
-      errors.push(`Row ${i + 1}: Missing name`);
-      continue;
-    }
-
-    const dob = get("date_of_birth");
-    if (!dob) {
-      errors.push(`Row ${i + 1}: Missing date of birth for ${firstName} ${lastName}`);
-      continue;
-    }
-
-    // Validate date format
-    const dateTest = new Date(dob);
-    if (isNaN(dateTest.getTime())) {
-      errors.push(`Row ${i + 1}: Invalid date "${dob}" for ${firstName} ${lastName}`);
-      continue;
-    }
-
-    const bats = get("bats").toUpperCase();
-    const throws_ = get("throws").toUpperCase();
-    const positions = get("positions").split(/[/;|]/).map(p => p.trim().toUpperCase()).filter(Boolean);
-    const weight = get("weight") ? Number(get("weight")) : null;
-    const jersey = get("jersey_number") ? Number(get("jersey_number")) : null;
-
-    players.push({
-      first_name: firstName,
-      last_name: lastName,
-      date_of_birth: dateTest.toISOString().split("T")[0],
-      positions,
-      bats: ["L", "R", "S"].includes(bats) ? bats : "R",
-      throws: ["L", "R"].includes(throws_) ? throws_ : "R",
-      height: get("height") || null,
-      weight: weight && !isNaN(weight) ? weight : null,
-      jersey_number: jersey && !isNaN(jersey) ? jersey : null,
-      notes: get("notes"),
-    });
-  }
-
-  return { players, errors };
-}
 
 export default function ImportPlayers() {
   const navigate = useNavigate();
   const batchAdd = useAddPlayersBatch();
+  const { data: existingPlayers = [] } = usePlayers();
   const [parsed, setParsed] = useState<ParsedPlayer[]>([]);
   const [parseErrors, setParseErrors] = useState<string[]>([]);
   const [fileName, setFileName] = useState("");
+  const [fileText, setFileText] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+
+  // Dedupe against the existing roster so re-importing (or a partial retry)
+  // doesn't double-create players already in the org.
+  const existingKeys = useMemo(() => rosterDedupeKeys(existingPlayers), [existingPlayers]);
+
+  // Re-parse whenever the file changes or the existing roster loads, so the
+  // dedupe set is current even if the file was picked before players returned.
+  const reparse = useCallback((text: string) => {
+    const { players, errors } = parseRosterCsv(text, existingKeys);
+    setParsed(players);
+    setParseErrors(errors);
+  }, [existingKeys]);
+
+  // If the existing roster loads (or refreshes) after a file was picked,
+  // re-run dedupe against the latest keys.
+  useEffect(() => {
+    if (fileText) reparse(fileText);
+  }, [fileText, reparse]);
 
   const handleFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -109,12 +43,11 @@ export default function ImportPlayers() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
-      const { players, errors } = parseCSV(text);
-      setParsed(players);
-      setParseErrors(errors);
+      setFileText(text);
+      reparse(text);
     };
     reader.readAsText(file);
-  }, []);
+  }, [reparse]);
 
   const handleImport = async () => {
     if (parsed.length === 0) return;
