@@ -47,6 +47,10 @@ export function useSaveEvaluation() {
   const { organizationId, user } = useAuth();
 
   return useMutation({
+    // upsert_evaluation is idempotent (ON CONFLICT update), so retrying a
+    // failed save is safe and rescues transient drops on field/stadium wifi.
+    retry: 2,
+    retryDelay: attempt => Math.min(1000 * 2 ** attempt, 4000),
     mutationFn: async ({ playerId, scores, notes }: { playerId: string; scores: Record<string, number>; notes: string }) => {
       if (!organizationId || !user) throw new Error("Not authenticated");
       const { data, error } = await supabase.rpc("upsert_evaluation", {
