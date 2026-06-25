@@ -70,8 +70,8 @@ export default function EvaluatePlayer() {
     setSaved(false);
   }, []);
 
-  const handleSave = async () => {
-    if (!playerId) return;
+  const handleSave = async (): Promise<boolean> => {
+    if (!playerId) return false;
     // Persist only non-null scores for skills in categories visible to this
     // player — hidden categories (e.g. catching for a non-catcher) default to 5
     // in form state and must not be saved as phantom scores.
@@ -80,13 +80,18 @@ export default function EvaluatePlayer() {
       await saveEval.mutateAsync({ playerId, scores: cleanScores, notes });
       setSaved(true);
       toast.success("Evaluation saved!");
+      return true;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
+      return false;
     }
   };
 
   const handleSaveAndNext = async () => {
-    await handleSave();
+    // Only advance if the save actually succeeded — otherwise a failed save
+    // (e.g. dropped wifi on the field) would navigate away and lose the eval.
+    const ok = await handleSave();
+    if (!ok) return;
     const currentIndex = players.findIndex(p => p.id === playerId);
     if (currentIndex < players.length - 1) {
       navigate(`/evaluate/${players[currentIndex + 1].id}`);
