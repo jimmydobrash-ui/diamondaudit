@@ -224,8 +224,8 @@ All slider scores reflect skill level relative to organized baseball competition
 
 [`EvaluatePlayer.tsx`](src/pages/EvaluatePlayer.tsx) hides the `id === "catching"` template category when the player's `positions[]` is set and does *not* include `"C"`. Empty/null `positions[]` shows all categories.
 
-- The hide is **UI-only**. The init effect still walks the full template, so any existing catcher scores survive the `upsert_evaluation` RPC (which does a full `scores = EXCLUDED.scores` replace, not a JSONB merge).
-- Side effect: non-catchers no longer save phantom default-`5` catcher slider values, so their leaderboard overalls reflect only categories they were actually evaluated on.
+- The category **hide is UI-only** — the init effect still walks the full template and defaults *every* slider (incl. hidden catching) to `5` in form state. What keeps phantom catching out of the DB is the **save filter**: `handleSave` persists only the skills in `visibleEvalCategories(...)` via [`scoresForVisiblePlayer`](src/lib/scoring.ts). Without that filter, non-catchers wrote `catching = 5` and it dragged their overall toward 5 (found in the June 24 prod audit — overalls off by up to 0.8, enough to reorder players).
+- Because the save is a full `scores = EXCLUDED.scores` replace (not a JSONB merge), re-saving a non-catcher also **cleans up** any pre-existing phantom catching scores. A real catcher (or a player with empty `positions`, which shows all categories) still saves catching normally.
 - Hardcoded to the seeded `"catching"` id. If an org deletes/recreates the catcher category with a different id, the rule won't apply.
 
 **Loading saved scores:** `EvaluatePlayer` populates the form only once the saved-evaluation query *resolves* (tracked per-player via a ref), and `EvaluationSlider`/`EvaluationNumberInput` sync to value-prop changes. Don't reintroduce gating on a one-shot "initialized" flag set before the query resolves — that caused saved sliders to reset to the default 5 on reopen.

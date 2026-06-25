@@ -4,6 +4,7 @@ import {
   calcSliderOverall,
   calcCategoryAvg,
   visibleEvalCategories,
+  scoresForVisiblePlayer,
   scoreTier,
 } from "./scoring";
 import type { TemplateCategory } from "@/hooks/useEvaluationTemplate";
@@ -140,6 +141,41 @@ describe("visibleEvalCategories", () => {
   it("shows all categories when positions are null or undefined", () => {
     expect(visibleEvalCategories(categories, null)).toHaveLength(2);
     expect(visibleEvalCategories(categories, undefined)).toHaveLength(2);
+  });
+});
+
+describe("scoresForVisiblePlayer", () => {
+  it("drops hidden catching scores for a non-catcher (no phantom values saved)", () => {
+    // popTime/blocking default to 5 in form state but catching is hidden for an SS
+    const scores = { contact: 8, power: 6, exitVelo: 90, popTime: 5, blocking: 5 };
+    expect(scoresForVisiblePlayer(scores, categories, ["SS"])).toEqual({
+      contact: 8,
+      power: 6,
+      exitVelo: 90,
+    });
+  });
+
+  it("keeps catching scores for a catcher", () => {
+    const scores = { contact: 8, popTime: 7, blocking: 6 };
+    expect(scoresForVisiblePlayer(scores, categories, ["C"])).toEqual({
+      contact: 8,
+      popTime: 7,
+      blocking: 6,
+    });
+  });
+
+  it("keeps all categories when positions are empty", () => {
+    const scores = { contact: 8, popTime: 7 };
+    expect(scoresForVisiblePlayer(scores, categories, [])).toEqual({ contact: 8, popTime: 7 });
+  });
+
+  it("drops null/undefined values and skills not in the template", () => {
+    const scores = {
+      contact: 8,
+      power: null as unknown as number,
+      staleSkill: 4,
+    };
+    expect(scoresForVisiblePlayer(scores, categories, ["SS"])).toEqual({ contact: 8 });
   });
 });
 

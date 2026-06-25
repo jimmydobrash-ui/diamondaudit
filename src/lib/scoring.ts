@@ -118,3 +118,27 @@ export function visibleEvalCategories(
   if (pos.includes("C")) return categories;
   return categories.filter(cat => cat.id !== "catching");
 }
+
+/**
+ * The scores to persist for a player: drop null/undefined, and keep only skills
+ * belonging to a category that's visible for this player. Hidden categories
+ * (e.g. catching for a non-catcher) initialise to a default 5 in the form but
+ * must not be saved — otherwise they become phantom scores that distort the
+ * player's overall, since the catcher rule is otherwise UI-only. Because the
+ * save is a full `scores = EXCLUDED.scores` replace, this also cleans up any
+ * pre-existing phantom catching scores when a non-catcher is re-saved.
+ */
+export function scoresForVisiblePlayer(
+  scores: Record<string, number | null>,
+  categories: TemplateCategory[],
+  positions: string[] | null | undefined,
+): Record<string, number> {
+  const visibleIds = new Set(
+    visibleEvalCategories(categories, positions).flatMap(c => c.skills.map(s => s.id)),
+  );
+  const out: Record<string, number> = {};
+  for (const [skill, value] of Object.entries(scores)) {
+    if (value !== null && value !== undefined && visibleIds.has(skill)) out[skill] = value;
+  }
+  return out;
+}
