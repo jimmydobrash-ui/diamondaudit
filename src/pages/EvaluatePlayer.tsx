@@ -6,7 +6,7 @@ import EvaluationSlider from "@/components/EvaluationSlider";
 import EvaluationNumberInput from "@/components/EvaluationNumberInput";
 import ScoringRuler from "@/components/ScoringRuler";
 import { getAgeGroup } from "@/lib/mock-data";
-import { visibleEvalCategories } from "@/lib/scoring";
+import { visibleEvalCategories, scoresForVisiblePlayer } from "@/lib/scoring";
 import { usePlayers } from "@/hooks/usePlayers";
 import { usePlayerEvaluation, useSaveEvaluation } from "@/hooks/useEvaluations";
 import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
@@ -72,11 +72,10 @@ export default function EvaluatePlayer() {
 
   const handleSave = async () => {
     if (!playerId) return;
-    // Filter out null values for storage
-    const cleanScores: Record<string, number> = {};
-    Object.entries(scores).forEach(([k, v]) => {
-      if (v !== null && v !== undefined) cleanScores[k] = v;
-    });
+    // Persist only non-null scores for skills in categories visible to this
+    // player — hidden categories (e.g. catching for a non-catcher) default to 5
+    // in form state and must not be saved as phantom scores.
+    const cleanScores = scoresForVisiblePlayer(scores, categories, player?.positions);
     try {
       await saveEval.mutateAsync({ playerId, scores: cleanScores, notes });
       setSaved(true);
