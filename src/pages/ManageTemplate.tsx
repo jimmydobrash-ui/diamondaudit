@@ -5,6 +5,7 @@ import AppLayout from "@/components/AppLayout";
 import InviteCoachDialog from "@/components/InviteCoachDialog";
 import { useEvaluationTemplate, useSaveTemplate, TemplateCategory, TemplateSkill } from "@/hooks/useEvaluationTemplate";
 import { useAuth } from "@/hooks/useAuth";
+import { useOrgMembers } from "@/hooks/useOrgMembers";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Plus, Trash2, GripVertical, Save, Check, SlidersHorizontal, Hash, UserPlus, AlertTriangle, Users } from "lucide-react";
 import { toast } from "sonner";
@@ -87,8 +88,9 @@ function CategoryEditor({ category, onChange, onRemove }: { category: TemplateCa
 export default function ManageTemplate() {
   const navigate = useNavigate();
   const { data: template, isLoading } = useEvaluationTemplate();
-  const { organizationId, role } = useAuth();
+  const { organizationId, role, user } = useAuth();
   const saveMutation = useSaveTemplate();
+  const { data: members = {} } = useOrgMembers();
 
   const [name, setName] = useState("Baseball Default");
   const [categories, setCategories] = useState<TemplateCategory[]>([]);
@@ -222,6 +224,42 @@ export default function ManageTemplate() {
                   <UserPlus className="w-3.5 h-3.5" /> Invite
                 </button>
               </div>
+
+              {(() => {
+                // All users who've actually accepted a role in this org.
+                // Sort: admins first, then coaches alphabetically by name.
+                const roster = Object.values(members).sort((a, b) => {
+                  if (a.role !== b.role) return a.role === "admin" ? -1 : 1;
+                  return a.name.localeCompare(b.name);
+                });
+                if (!roster.length) return null;
+                return (
+                  <div className="border-t pt-3 space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Registered Coaches ({roster.length})
+                    </p>
+                    {roster.map(m => (
+                      <div key={m.userId} className="flex items-center justify-between py-1.5">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm text-foreground">{m.name}</p>
+                          {m.userId === user?.id && (
+                            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">you</span>
+                          )}
+                        </div>
+                        <span
+                          className={`text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full ${
+                            m.role === "admin"
+                              ? "bg-primary/10 text-primary"
+                              : "bg-secondary text-muted-foreground"
+                          }`}
+                        >
+                          {m.role}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
 
               {pendingInvites.length > 0 && (
                 <div className="border-t pt-3 space-y-2">
