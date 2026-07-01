@@ -179,6 +179,99 @@ describe("parseRosterCsv", () => {
   });
 });
 
+describe("parseRosterCsv — Playbook format", () => {
+  // Trimmed Playbook headers/rows — real files have ~36 columns, but only
+  // participant_name, dob, class_session, and Participant player_position
+  // matter for the roster. We include the surrounding fluff to prove the
+  // auto-detect + column lookup work against the actual header shape.
+  const playbookHeader =
+    "pk,class_session,dob,participant_name,participant_age,gender,Participant former_team,Participant player_position";
+
+  it("auto-detects Playbook and imports the fields we care about", () => {
+    const csv = [
+      playbookHeader,
+      '1251296,Fri 07/10/26 05:00 PM - 14u 2027 Youth Team Tryouts,2012-12-01,Macklin Matter,13,ML,Team 5280,"C, RHP, 1B"',
+    ].join("\n");
+    const { players, errors } = parseRosterCsv(csv);
+    expect(errors).toEqual([]);
+    expect(players).toHaveLength(1);
+    expect(players[0]).toMatchObject({
+      first_name: "Macklin",
+      last_name: "Matter",
+      date_of_birth: "2012-12-01",
+      positions: ["C", "P", "1B"], // RHP normalised to P
+      tags: ["14U"],
+      notes: "Former team: Team 5280",
+    });
+  });
+
+  it("keeps compound last names together (splits on first space, not last)", () => {
+    // "Laura Gomez Rios" — coach can fix via the player edit form if wrong,
+    // but we default to treating everything after the first space as the last
+    // name because paternal-maternal compound surnames are common enough.
+    const csv = [
+      playbookHeader,
+      "1,Tue 07/07/26 05:00 PM - 11U 2027 Youth Team Tryouts,2015-12-12,Laura Gomez Rios,10,FM,Diamond Club,2B",
+    ].join("\n");
+    const { players } = parseRosterCsv(csv);
+    expect(players[0].first_name).toBe("Laura");
+    expect(players[0].last_name).toBe("Gomez Rios");
+  });
+
+  it("extracts the tryout age group from the class session (case-insensitive)", () => {
+    const csv = [
+      playbookHeader,
+      "1,Wed 07/08/26 05:00 PM - 12u 2027 Youth Team Tryouts,2014-07-17,Bradley Turner,11,ML,Gameday,3B",
+      "2,11U 2027 Youth Team Tryouts,2015-01-01,Sam Whitfield,10,ML,Diamond,SS",
+    ].join("\n");
+    const { players } = parseRosterCsv(csv);
+    expect(players[0].tags).toEqual(["12U"]);
+    expect(players[1].tags).toEqual(["11U"]);
+  });
+
+  it("dedupes Playbook rows within the file and against the existing roster", () => {
+    const existing = rosterDedupeKeys([
+      { first_name: "Macklin", last_name: "Matter", date_of_birth: "2012-12-01" },
+    ]);
+    const csv = [
+      playbookHeader,
+      "1,14u,2012-12-01,Macklin Matter,13,ML,,C",
+      "2,13u,2014-02-15,Nolan Foncannon,12,ML,,3B",
+      "3,13u,2014-02-15,Nolan Foncannon,12,ML,,3B", // in-file dup
+    ].join("\n");
+    const { players, errors } = parseRosterCsv(csv, existing);
+    expect(players.map(p => `${p.first_name} ${p.last_name}`)).toEqual(["Nolan Foncannon"]);
+    expect(errors.some(e => /already on the roster/.test(e))).toBe(true);
+    expect(errors.some(e => /appears twice in the file/.test(e))).toBe(true);
+  });
+
+  it("handles Playbook rows with missing optional fields (no position, no team)", () => {
+    const csv = [
+      playbookHeader,
+      "1,10U tryouts,2016-04-10,Gabe Rivera,9,ML,,",
+    ].join("\n");
+    const { players, errors } = parseRosterCsv(csv);
+    expect(errors).toEqual([]);
+    expect(players[0].positions).toEqual([]);
+    expect(players[0].notes).toBe("");
+    expect(players[0].tags).toEqual(["10U"]);
+  });
+
+  it("reports missing dob / participant_name with the file row number", () => {
+    const csv = [
+      playbookHeader,
+      "1,14u,,Macklin Matter,13,ML,,",
+      "2,14u,2012-01-01,,13,ML,,",
+    ].join("\n");
+    const { players, errors } = parseRosterCsv(csv);
+    expect(players).toEqual([]);
+    expect(errors).toEqual([
+      "Row 2: Missing dob for Macklin Matter",
+      "Row 3: Missing participant_name",
+    ]);
+  });
+});
+
 describe("rosterDedupeKeys", () => {
   it("skips players without a DOB (they can't be uniquely matched)", () => {
     const keys = rosterDedupeKeys([

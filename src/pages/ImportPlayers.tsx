@@ -77,7 +77,8 @@ export default function ImportPlayers() {
         <div className="bg-card rounded-xl p-4 card-elevated space-y-2">
           <h2 className="text-sm font-semibold text-foreground">CSV Format</h2>
           <p className="text-xs text-muted-foreground">
-            Your CSV should have these columns (first_name and last_name are required):
+            Playbook class-registration exports are auto-detected — just drop the file in.
+            Otherwise, use these columns (first_name and last_name are required):
           </p>
           <code className="block text-[11px] bg-secondary rounded-lg p-2 text-muted-foreground overflow-x-auto">
             first_name,last_name,date_of_birth,positions,bats,throws,height,weight,jersey_number,notes
@@ -85,7 +86,8 @@ export default function ImportPlayers() {
           <p className="text-xs text-muted-foreground">
             • Positions can be separated by / or ; (e.g., "SS/P")<br />
             • Date format: YYYY-MM-DD or MM/DD/YYYY<br />
-            • Bats: L, R, or S · Throws: L or R
+            • Bats: L, R, or S · Throws: L or R<br />
+            • Playbook: age group comes from the tryout session (e.g. "14U"); edit a player to change it
           </p>
         </div>
 
@@ -130,6 +132,7 @@ export default function ImportPlayers() {
                       <th className="px-3 py-2 text-left text-muted-foreground font-medium">#</th>
                       <th className="px-3 py-2 text-left text-muted-foreground font-medium">Name</th>
                       <th className="px-3 py-2 text-left text-muted-foreground font-medium">DOB</th>
+                      <th className="px-3 py-2 text-left text-muted-foreground font-medium">Age</th>
                       <th className="px-3 py-2 text-left text-muted-foreground font-medium">Pos</th>
                       <th className="px-3 py-2 text-left text-muted-foreground font-medium">B/T</th>
                     </tr>
@@ -140,6 +143,9 @@ export default function ImportPlayers() {
                         <td className="px-3 py-2 text-muted-foreground">{p.jersey_number ?? "-"}</td>
                         <td className="px-3 py-2 font-medium text-foreground">{p.first_name} {p.last_name}</td>
                         <td className="px-3 py-2 text-muted-foreground">{p.date_of_birth}</td>
+                        <td className="px-3 py-2 text-muted-foreground">
+                          {p.tags.find(t => /^\d+U$/i.test(t)) ?? "-"}
+                        </td>
                         <td className="px-3 py-2 text-muted-foreground">{p.positions.join(", ")}</td>
                         <td className="px-3 py-2 text-muted-foreground">{p.bats}/{p.throws}</td>
                       </tr>

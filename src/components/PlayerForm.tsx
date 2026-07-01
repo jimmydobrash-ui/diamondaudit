@@ -16,6 +16,10 @@ export interface PlayerFormValues {
   weight: string;
   jersey_number: string;
   notes: string;
+  /** Optional override like "13U" — overrides the DOB-derived tryout age group. */
+  tryout_age_group: string;
+  /** Non-age-group tags on the player, kept as-is so we don't clobber them. */
+  otherTags: string[];
 }
 
 export const emptyPlayerForm: PlayerFormValues = {
@@ -29,10 +33,16 @@ export const emptyPlayerForm: PlayerFormValues = {
   weight: "",
   jersey_number: "",
   notes: "",
+  tryout_age_group: "",
+  otherTags: [],
 };
+
+const AGE_GROUP_TAG = /^\d{1,2}U$/i;
 
 /** Map a DB player row to editable form values. */
 export function playerToFormValues(p: Player): PlayerFormValues {
+  const tags = p.tags ?? [];
+  const ageTag = tags.find(t => AGE_GROUP_TAG.test(t));
   return {
     first_name: p.first_name,
     last_name: p.last_name,
@@ -44,11 +54,15 @@ export function playerToFormValues(p: Player): PlayerFormValues {
     weight: p.weight != null ? String(p.weight) : "",
     jersey_number: p.jersey_number != null ? String(p.jersey_number) : "",
     notes: p.notes ?? "",
+    tryout_age_group: ageTag ? ageTag.toUpperCase() : "",
+    otherTags: tags.filter(t => !AGE_GROUP_TAG.test(t)),
   };
 }
 
 /** Map form values to a players insert/update payload (numbers coerced, blanks → null). */
 export function playerFormToPayload(v: PlayerFormValues) {
+  const normalisedAge = v.tryout_age_group.trim().toUpperCase();
+  const ageTag = AGE_GROUP_TAG.test(normalisedAge) ? [normalisedAge] : [];
   return {
     first_name: v.first_name.trim(),
     last_name: v.last_name.trim(),
@@ -60,6 +74,7 @@ export function playerFormToPayload(v: PlayerFormValues) {
     weight: v.weight ? Number(v.weight) : null,
     jersey_number: v.jersey_number ? Number(v.jersey_number) : null,
     notes: v.notes,
+    tags: [...ageTag, ...v.otherTags],
   };
 }
 
@@ -110,10 +125,17 @@ export default function PlayerForm({ initial, submitting, submitLabel, onSubmit 
           <input type="date" value={form.date_of_birth} onChange={e => setForm(p => ({ ...p, date_of_birth: e.target.value }))} required className="w-full h-11 px-3 rounded-xl bg-secondary text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
         </div>
         <div>
-          <label className="text-xs font-medium text-muted-foreground block mb-1">Jersey #</label>
-          <input type="number" value={form.jersey_number} onChange={e => setForm(p => ({ ...p, jersey_number: e.target.value }))} min={0} max={99} className="w-full h-11 px-3 rounded-xl bg-secondary text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+          <label className="text-xs font-medium text-muted-foreground block mb-1">Tryout Age Group</label>
+          <input
+            value={form.tryout_age_group}
+            onChange={e => setForm(p => ({ ...p, tryout_age_group: e.target.value }))}
+            placeholder="Auto (e.g. 13U)"
+            maxLength={4}
+            className="w-full h-11 px-3 rounded-xl bg-secondary text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
         </div>
       </div>
+
 
       <div>
         <label className="text-xs font-medium text-muted-foreground block mb-1">Positions</label>
@@ -151,13 +173,17 @@ export default function PlayerForm({ initial, submitting, submitLabel, onSubmit 
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <label className="text-xs font-medium text-muted-foreground block mb-1">Jersey #</label>
+          <input type="number" value={form.jersey_number} onChange={e => setForm(p => ({ ...p, jersey_number: e.target.value }))} min={0} max={99} className="w-full h-11 px-3 rounded-xl bg-secondary text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+        </div>
         <div>
           <label className="text-xs font-medium text-muted-foreground block mb-1">Height</label>
           <input placeholder={`5'10"`} value={form.height} onChange={e => setForm(p => ({ ...p, height: e.target.value }))} maxLength={10} className="w-full h-11 px-3 rounded-xl bg-secondary text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20" />
         </div>
         <div>
-          <label className="text-xs font-medium text-muted-foreground block mb-1">Weight (lbs)</label>
+          <label className="text-xs font-medium text-muted-foreground block mb-1">Weight</label>
           <input type="number" value={form.weight} onChange={e => setForm(p => ({ ...p, weight: e.target.value }))} min={0} max={400} className="w-full h-11 px-3 rounded-xl bg-secondary text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
         </div>
       </div>

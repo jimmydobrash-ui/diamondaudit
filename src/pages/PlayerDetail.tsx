@@ -11,7 +11,7 @@ import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
 import { usePlayerGrades, type PlayerGradeValue } from "@/hooks/usePlayerGrades";
 import { useOrgMembers } from "@/hooks/useOrgMembers";
 import { useAuth } from "@/hooks/useAuth";
-import { getAgeGroup } from "@/lib/mock-data";
+import { playerAgeGroup } from "@/lib/mock-data";
 import {
   aggregateScoresByPlayer,
   calcSliderOverall,
@@ -94,7 +94,7 @@ export default function PlayerDetail() {
             <h1 className="text-lg font-bold text-foreground truncate">{player?.first_name} {player?.last_name}</h1>
             {player && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                <span>{getAgeGroup(player.date_of_birth)}</span>
+                <span>{playerAgeGroup(player)}</span>
                 <span>·</span>
                 <span>{player.positions.join(", ") || "No position"}</span>
                 <span>·</span>

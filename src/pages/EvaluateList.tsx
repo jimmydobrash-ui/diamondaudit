@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useEvaluations } from "@/hooks/useEvaluations";
-import { getAgeGroup } from "@/lib/mock-data";
+import { playerAgeGroup } from "@/lib/mock-data";
 import { ClipboardList, ChevronRight } from "lucide-react";
 import { useMemo } from "react";
 import { useMyPlayerGrades, type PlayerGradeValue } from "@/hooks/usePlayerGrades";
@@ -69,7 +69,7 @@ export default function EvaluateList() {
                         <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary">TOP</span>
                       )}
                     </div>
-                    <span className="text-xs text-muted-foreground">{getAgeGroup(player.date_of_birth)} · {player.positions.join(", ")} · B:{player.bats} T:{player.throws}</span>
+                    <span className="text-xs text-muted-foreground">{playerAgeGroup(player)} · {player.positions.join(", ")} · B:{player.bats} T:{player.throws}</span>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {score && <OverallScore value={score} showTier className={`text-lg font-bold ${score >= 8 ? "text-primary" : "text-foreground"}`} />}

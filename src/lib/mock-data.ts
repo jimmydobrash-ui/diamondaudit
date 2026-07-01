@@ -102,6 +102,35 @@ export function getAgeGroup(dob: string): string {
   return `${calcPlayingAge(dob)}U`;
 }
 
+/**
+ * The tryout age group to display for a player. Prefers an explicit "NNU" tag
+ * (set on CSV import from Playbook's class_session, editable via the player
+ * form) so a player registered to try out one level up is filed under the
+ * right group — falls back to the DOB-derived age when no tag is present.
+ */
+export function playerAgeGroup(p: { date_of_birth: string; tags: string[] | null }): string {
+  const tag = (p.tags ?? []).find(t => /^\d{1,2}U$/i.test(t));
+  return tag ? tag.toUpperCase() : getAgeGroup(p.date_of_birth);
+}
+
+/**
+ * Sort age-group labels ("7U", "10U", "14U", ...) numerically so filter chips
+ * read 7U, 8U, 9U, 10U, 11U instead of the lexicographic 10U, 11U, 7U, 8U, 9U.
+ * Non-standard labels sort after the numeric ones, alphabetically.
+ */
+export function sortAgeGroups(groups: string[]): string[] {
+  return [...groups].sort((a, b) => {
+    const na = parseInt(a, 10);
+    const nb = parseInt(b, 10);
+    const aOk = !isNaN(na);
+    const bOk = !isNaN(nb);
+    if (aOk && bOk) return na - nb;
+    if (aOk) return -1;
+    if (bOk) return 1;
+    return a.localeCompare(b);
+  });
+}
+
 export const mockPlayers: Player[] = [
   { id: '1', firstName: 'Marcus', lastName: 'Johnson', dateOfBirth: '2012-03-15', positions: ['SS', 'P'], bats: 'R', throws: 'R', height: "5'4\"", weight: 115, jerseyNumber: 7, notes: 'Strong arm, quick hands', tags: ['Top Prospect'] },
   { id: '2', firstName: 'Ethan', lastName: 'Williams', dateOfBirth: '2012-08-22', positions: ['C', '1B'], bats: 'L', throws: 'R', height: "5'6\"", weight: 130, jerseyNumber: 12, notes: 'Great game awareness', tags: [] },

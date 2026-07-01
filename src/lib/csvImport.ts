@@ -18,6 +18,8 @@ export interface ParsedPlayer {
   weight: number | null;
   jersey_number: number | null;
   notes: string;
+  /** Optional tags (e.g. ["14U"] to override the DOB-derived tryout age group). */
+  tags: string[];
 }
 
 export interface ParseResult {
@@ -84,7 +86,16 @@ export function parseRosterCsv(text: string, existingKeys: Set<string> = new Set
   const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/).filter(l => l.trim() !== "");
   if (lines.length < 2) return { players: [], errors: ["CSV must have a header row and at least one data row"] };
 
-  const headerCells = splitCsvLine(lines[0]).map(normHeader);
+  // Preserve raw (lower-cased) header cells for Playbook detection — Playbook's
+  // column names contain spaces (e.g. "Participant player_position") that the
+  // strict normHeader would collapse and mis-match. We only aggressively
+  // normalise for the native (short-headered) format.
+  const rawHeaderCells = splitCsvLine(lines[0]).map(h => h.trim().toLowerCase());
+  if (isPlaybookHeader(rawHeaderCells)) {
+    return parsePlaybookCsv(lines, rawHeaderCells, existingKeys);
+  }
+
+  const headerCells = rawHeaderCells.map(normHeader);
   const colIdx: Partial<Record<keyof typeof HEADER_ALIASES, number>> = {};
   headerCells.forEach((cell, i) => {
     for (const [field, aliases] of Object.entries(HEADER_ALIASES)) {
@@ -157,7 +168,136 @@ export function parseRosterCsv(text: string, existingKeys: Set<string> = new Set
       weight: weight !== null && !isNaN(weight) ? weight : null,
       jersey_number: jersey !== null && !isNaN(jersey) ? jersey : null,
       notes: get(vals, "notes"),
+      tags: [],
     });
+  }
+
+  return { players, errors };
+}
+
+/**
+ * Playbook is our booking software. Its class-registration CSV is very wide
+ * (~36 columns of billing/waiver metadata) but has the shape we need for the
+ * tryout roster: participant_name, dob, class_session, and player_position.
+ *
+ * We detect it by looking for the signature columns and then translate to
+ * ParsedPlayer directly (instead of trying to funnel it through the native
+ * header parser). Detection is case-insensitive and tolerates missing columns.
+ */
+function isPlaybookHeader(headerCells: string[]): boolean {
+  const set = new Set(headerCells);
+  // participant_name + dob is the tightest tell; class_session confirms it.
+  return set.has("participant_name") && set.has("dob") && set.has("class_session");
+}
+
+/** Normalise Playbook's position names (RHP/LHP → P; strip suffixes). */
+function normalisePosition(raw: string): string {
+  const p = raw.trim().toUpperCase();
+  if (p === "RHP" || p === "LHP") return "P";
+  return p;
+}
+
+/** Extract the tryout age group tag (e.g. "14U") from a Playbook class_session. */
+function extractAgeGroupTag(classSession: string): string | null {
+  // Matches patterns like "14u", "14U", "11U 2027 Youth Team Tryouts"
+  const m = classSession.match(/\b(\d{1,2})[uU]\b/);
+  return m ? `${m[1]}U` : null;
+}
+
+/**
+ * Split "Firstname Middle Lastname" into first + last. Uses the first space so
+ * compound last names ("Gomez Rios") stay together; coaches can fix the
+ * ~occasional mis-split (e.g. "Jean Paul Smith") via the player edit form.
+ */
+function splitFullName(full: string): { first: string; last: string } {
+  const trimmed = full.trim().replace(/\s+/g, " ");
+  const i = trimmed.indexOf(" ");
+  return i < 0
+    ? { first: trimmed, last: "" }
+    : { first: trimmed.slice(0, i), last: trimmed.slice(i + 1) };
+}
+
+function parsePlaybookCsv(
+  lines: string[],
+  headerCells: string[],
+  existingKeys: Set<string>,
+): ParseResult {
+  const idx = (name: string) => headerCells.indexOf(name);
+  const cName = idx("participant_name");
+  const cDob = idx("dob");
+  const cSession = idx("class_session");
+  const cPos = idx("participant player_position"); // Playbook prefixes some fields "Participant "
+  const cTeam = idx("participant former_team");
+  const cGender = idx("gender");
+
+  const players: ParsedPlayer[] = [];
+  const errors: string[] = [];
+  const seen = new Set<string>(existingKeys);
+
+  for (let i = 1; i < lines.length; i++) {
+    const fileRow = i + 1;
+    const vals = splitCsvLine(lines[i]);
+    const cell = (c: number) => (c < 0 ? "" : (vals[c] ?? "").trim());
+
+    const fullName = cell(cName);
+    if (!fullName) { errors.push(`Row ${fileRow}: Missing participant_name`); continue; }
+    const { first: firstName, last: lastName } = splitFullName(fullName);
+    if (!lastName) {
+      errors.push(`Row ${fileRow}: ${fullName} has no last name — set it manually after import`);
+    }
+
+    const dobRaw = cell(cDob);
+    if (!dobRaw) { errors.push(`Row ${fileRow}: Missing dob for ${fullName}`); continue; }
+    const parsedDate = new Date(dobRaw);
+    if (isNaN(parsedDate.getTime())) {
+      errors.push(`Row ${fileRow}: Invalid dob "${dobRaw}" for ${fullName}`);
+      continue;
+    }
+    const isoDob = parsedDate.toISOString().split("T")[0];
+
+    const key = `${firstName.toLowerCase()}|${lastName.toLowerCase()}|${isoDob}`;
+    if (seen.has(key)) {
+      errors.push(
+        existingKeys.has(key)
+          ? `Row ${fileRow}: ${fullName} (${isoDob}) is already on the roster — skipped`
+          : `Row ${fileRow}: ${fullName} (${isoDob}) appears twice in the file — skipped`,
+      );
+      continue;
+    }
+    seen.add(key);
+
+    const positions = cell(cPos)
+      .split(",")
+      .map(normalisePosition)
+      .filter(Boolean);
+
+    const ageTag = extractAgeGroupTag(cell(cSession));
+    const tags = ageTag ? [ageTag] : [];
+
+    const gender = cell(cGender).toUpperCase();
+    // Playbook uses ML/FM for gender; the app expects L/R/S for bats and L/R for
+    // throws, which don't come from Playbook — leave both at default R.
+    const bats = "R";
+    const throws_ = "R";
+
+    const team = cell(cTeam);
+    const notes = team ? `Former team: ${team}` : "";
+
+    players.push({
+      first_name: firstName,
+      last_name: lastName || fullName, // fall back so DB NOT NULL constraint is satisfied
+      date_of_birth: isoDob,
+      positions,
+      bats,
+      throws: throws_,
+      height: null,
+      weight: null,
+      jersey_number: null,
+      notes,
+      tags,
+    });
+    // Suppress unused-var lint: gender is documented above.
+    void gender;
   }
 
   return { players, errors };

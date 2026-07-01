@@ -7,7 +7,7 @@ import { usePlayers } from "@/hooks/usePlayers";
 import { useMyPlayerGrades, useSetPlayerGrade, type PlayerGradeValue } from "@/hooks/usePlayerGrades";
 import { useEvaluations } from "@/hooks/useEvaluations";
 import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
-import { getAgeGroup } from "@/lib/mock-data";
+import { playerAgeGroup } from "@/lib/mock-data";
 import { calcSliderOverall, aggregateScoresByPlayer } from "@/lib/scoring";
 import OverallScore from "@/components/OverallScore";
 import { Layers, ChevronRight, Check } from "lucide-react";
@@ -132,7 +132,7 @@ export default function TeamBuilder() {
                         {currentGrade && <GradeBadge grade={currentGrade} />}
                       </div>
                       <span className="text-xs text-muted-foreground">
-                        {getAgeGroup(player.date_of_birth)} · {player.positions.join(", ")} · B:{player.bats} T:{player.throws}
+                        {playerAgeGroup(player)} · {player.positions.join(", ")} · B:{player.bats} T:{player.throws}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">

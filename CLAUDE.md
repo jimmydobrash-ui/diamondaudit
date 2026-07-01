@@ -90,7 +90,8 @@ diamondaudit/
     │   ├── utils.ts             — shadcn `cn` helper
     │   ├── scoring.ts           — scoring source of truth (see Scoring)
     │   ├── orgBootstrap.ts      — org creation + invite auto-join at signup
-    │   └── mock-data.ts         — mostly dead; only `getAgeGroup` is still used
+    │   ├── csvImport.ts         — roster CSV parser (native + Playbook auto-detect)
+    │   └── mock-data.ts         — mostly dead; still exports `getAgeGroup` (DOB-derived) and `playerAgeGroup` (prefers a `\d+U` tag override, else derives from DOB)
     └── test/                    — vitest setup + lib/component tests
 ```
 
