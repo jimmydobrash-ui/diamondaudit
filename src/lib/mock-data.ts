@@ -102,6 +102,17 @@ export function getAgeGroup(dob: string): string {
   return `${calcPlayingAge(dob)}U`;
 }
 
+/**
+ * The tryout age group to display for a player. Prefers an explicit "NNU" tag
+ * (set on CSV import from Playbook's class_session, editable via the player
+ * form) so a player registered to try out one level up is filed under the
+ * right group — falls back to the DOB-derived age when no tag is present.
+ */
+export function playerAgeGroup(p: { date_of_birth: string; tags: string[] | null }): string {
+  const tag = (p.tags ?? []).find(t => /^\d{1,2}U$/i.test(t));
+  return tag ? tag.toUpperCase() : getAgeGroup(p.date_of_birth);
+}
+
 export const mockPlayers: Player[] = [
   { id: '1', firstName: 'Marcus', lastName: 'Johnson', dateOfBirth: '2012-03-15', positions: ['SS', 'P'], bats: 'R', throws: 'R', height: "5'4\"", weight: 115, jerseyNumber: 7, notes: 'Strong arm, quick hands', tags: ['Top Prospect'] },
   { id: '2', firstName: 'Ethan', lastName: 'Williams', dateOfBirth: '2012-08-22', positions: ['C', '1B'], bats: 'L', throws: 'R', height: "5'6\"", weight: 130, jerseyNumber: 12, notes: 'Great game awareness', tags: [] },

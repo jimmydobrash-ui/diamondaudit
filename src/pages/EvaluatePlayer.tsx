@@ -5,7 +5,7 @@ import AppLayout from "@/components/AppLayout";
 import EvaluationSlider from "@/components/EvaluationSlider";
 import EvaluationNumberInput from "@/components/EvaluationNumberInput";
 import ScoringRuler from "@/components/ScoringRuler";
-import { getAgeGroup } from "@/lib/mock-data";
+import { playerAgeGroup } from "@/lib/mock-data";
 import { visibleEvalCategories, scoresForVisiblePlayer } from "@/lib/scoring";
 import { usePlayers } from "@/hooks/usePlayers";
 import { usePlayerEvaluation, useSaveEvaluation } from "@/hooks/useEvaluations";
@@ -136,7 +136,7 @@ export default function EvaluatePlayer() {
           <div className="flex-1">
             <h1 className="text-lg font-bold text-foreground">{player.first_name} {player.last_name}</h1>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>{getAgeGroup(player.date_of_birth)}</span>
+              <span>{playerAgeGroup(player)}</span>
               <span>·</span>
               <span>{player.positions.join(", ")}</span>
               <span>·</span>

@@ -5,7 +5,7 @@ import AppLayout from "@/components/AppLayout";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useEvaluations } from "@/hooks/useEvaluations";
 import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
-import { getAgeGroup } from "@/lib/mock-data";
+import { playerAgeGroup } from "@/lib/mock-data";
 import { calcSliderOverall, calcCategoryAvg, aggregateScoresByPlayer, scoreTier } from "@/lib/scoring";
 import { toCsv, downloadCsv } from "@/lib/csv";
 import OverallScore from "@/components/OverallScore";
@@ -27,7 +27,7 @@ export default function Leaderboard() {
   );
 
   const ageGroups = useMemo(() => {
-    return [...new Set(players.map(p => getAgeGroup(p.date_of_birth)))].sort();
+    return [...new Set(players.map(p => playerAgeGroup(p)))].sort();
   }, [players]);
 
   const evalCounts = useMemo(() => {
@@ -38,7 +38,7 @@ export default function Leaderboard() {
 
   const ranked = useMemo(() => {
     let list = [...players];
-    if (ageFilter !== "all") list = list.filter(p => getAgeGroup(p.date_of_birth) === ageFilter);
+    if (ageFilter !== "all") list = list.filter(p => playerAgeGroup(p) === ageFilter);
 
     return list
       .map(p => {
@@ -76,7 +76,7 @@ export default function Leaderboard() {
         p.jersey_number ?? "",
         p.first_name,
         p.last_name,
-        getAgeGroup(p.date_of_birth),
+        playerAgeGroup(p),
         p.positions.join(" / "),
         p.bats,
         p.throws,

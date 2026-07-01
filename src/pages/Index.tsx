@@ -5,7 +5,7 @@ import AppLayout from "@/components/AppLayout";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useEvaluations } from "@/hooks/useEvaluations";
 import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
-import { getAgeGroup } from "@/lib/mock-data";
+import { playerAgeGroup } from "@/lib/mock-data";
 import { calcSliderOverall, aggregateScoresByPlayer } from "@/lib/scoring";
 import OverallScore from "@/components/OverallScore";
 import { Users, ClipboardList, BarChart3, TrendingUp } from "lucide-react";
@@ -96,7 +96,7 @@ export default function Index() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <span className="text-sm font-semibold text-foreground truncate block">{player.first_name} {player.last_name}</span>
-                      <span className="text-xs text-muted-foreground">{getAgeGroup(player.date_of_birth)} · {player.positions.join(", ")}</span>
+                      <span className="text-xs text-muted-foreground">{playerAgeGroup(player)} · {player.positions.join(", ")}</span>
                     </div>
                     <OverallScore value={playerScores[player.id]} showTier className="text-lg font-bold text-primary" />
                   </Link>
