@@ -5,7 +5,7 @@ import AppLayout from "@/components/AppLayout";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useEvaluations } from "@/hooks/useEvaluations";
 import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
-import { getAgeGroup } from "@/lib/mock-data";
+import { playerAgeGroup, sortAgeGroups } from "@/lib/mock-data";
 import { calcSliderOverall, aggregateScoresByPlayer } from "@/lib/scoring";
 import { useAuth } from "@/hooks/useAuth";
 import OverallScore from "@/components/OverallScore";
@@ -33,7 +33,7 @@ export default function Players() {
   }, [evaluations, categories]);
 
   const ageGroups = useMemo(() => {
-    return [...new Set(players.map(p => getAgeGroup(p.date_of_birth)))].sort();
+    return sortAgeGroups([...new Set(players.map(p => playerAgeGroup(p)))]);
   }, [players]);
 
   const filtered = useMemo(() => {
@@ -41,7 +41,7 @@ export default function Players() {
       const matchesSearch = search === "" ||
         `${p.first_name} ${p.last_name}`.toLowerCase().includes(search.toLowerCase()) ||
         (p.jersey_number?.toString() ?? "").includes(search);
-      const matchesAge = ageFilter === "all" || getAgeGroup(p.date_of_birth) === ageFilter;
+      const matchesAge = ageFilter === "all" || playerAgeGroup(p) === ageFilter;
       return matchesSearch && matchesAge;
     });
   }, [players, search, ageFilter]);
@@ -103,7 +103,7 @@ export default function Players() {
                       )}
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xs text-muted-foreground">{getAgeGroup(player.date_of_birth)}</span>
+                      <span className="text-xs text-muted-foreground">{playerAgeGroup(player)}</span>
                       <span className="text-muted-foreground text-xs">·</span>
                       <span className="text-xs text-muted-foreground">{player.positions.join(", ")}</span>
                       <span className="text-muted-foreground text-xs">·</span>

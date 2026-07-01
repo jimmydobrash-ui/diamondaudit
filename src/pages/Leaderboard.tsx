@@ -5,7 +5,7 @@ import AppLayout from "@/components/AppLayout";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useEvaluations } from "@/hooks/useEvaluations";
 import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
-import { playerAgeGroup } from "@/lib/mock-data";
+import { playerAgeGroup, sortAgeGroups } from "@/lib/mock-data";
 import { calcSliderOverall, calcCategoryAvg, aggregateScoresByPlayer, scoreTier } from "@/lib/scoring";
 import { toCsv, downloadCsv } from "@/lib/csv";
 import OverallScore from "@/components/OverallScore";
@@ -27,7 +27,7 @@ export default function Leaderboard() {
   );
 
   const ageGroups = useMemo(() => {
-    return [...new Set(players.map(p => playerAgeGroup(p)))].sort();
+    return sortAgeGroups([...new Set(players.map(p => playerAgeGroup(p)))]);
   }, [players]);
 
   const evalCounts = useMemo(() => {

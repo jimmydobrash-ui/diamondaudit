@@ -113,6 +113,24 @@ export function playerAgeGroup(p: { date_of_birth: string; tags: string[] | null
   return tag ? tag.toUpperCase() : getAgeGroup(p.date_of_birth);
 }
 
+/**
+ * Sort age-group labels ("7U", "10U", "14U", ...) numerically so filter chips
+ * read 7U, 8U, 9U, 10U, 11U instead of the lexicographic 10U, 11U, 7U, 8U, 9U.
+ * Non-standard labels sort after the numeric ones, alphabetically.
+ */
+export function sortAgeGroups(groups: string[]): string[] {
+  return [...groups].sort((a, b) => {
+    const na = parseInt(a, 10);
+    const nb = parseInt(b, 10);
+    const aOk = !isNaN(na);
+    const bOk = !isNaN(nb);
+    if (aOk && bOk) return na - nb;
+    if (aOk) return -1;
+    if (bOk) return 1;
+    return a.localeCompare(b);
+  });
+}
+
 export const mockPlayers: Player[] = [
   { id: '1', firstName: 'Marcus', lastName: 'Johnson', dateOfBirth: '2012-03-15', positions: ['SS', 'P'], bats: 'R', throws: 'R', height: "5'4\"", weight: 115, jerseyNumber: 7, notes: 'Strong arm, quick hands', tags: ['Top Prospect'] },
   { id: '2', firstName: 'Ethan', lastName: 'Williams', dateOfBirth: '2012-08-22', positions: ['C', '1B'], bats: 'L', throws: 'R', height: "5'6\"", weight: 130, jerseyNumber: 12, notes: 'Great game awareness', tags: [] },
