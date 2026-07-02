@@ -3,7 +3,14 @@ export type CsvCell = string | number | null | undefined;
 /** Serialize rows to CSV, quoting/escaping cells that contain commas, quotes, or newlines. */
 export function toCsv(headers: string[], rows: CsvCell[][]): string {
   const escape = (value: CsvCell): string => {
-    const s = value === null || value === undefined ? "" : String(value);
+    if (value === null || value === undefined) return "";
+    let s = String(value);
+    // Defuse spreadsheet formula injection: a string cell starting with =, +, -,
+    // @, tab, or CR is executed as a formula by Excel/Sheets. Player names and
+    // notes originate from public tryout registration, so prefix such a cell
+    // with an apostrophe to force literal text. Numbers are never a payload, so
+    // legitimate negative scores are left untouched.
+    if (typeof value === "string" && /^[=+\-@\t\r]/.test(s)) s = `'${s}`;
     return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   return [headers, ...rows].map(row => row.map(escape).join(",")).join("\r\n");

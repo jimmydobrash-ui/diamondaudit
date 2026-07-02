@@ -15,4 +15,25 @@ describe("toCsv", () => {
   it("renders null/undefined as empty cells", () => {
     expect(toCsv(["a", "b", "c"], [[null, undefined, ""]])).toBe("a,b,c\r\n,,");
   });
+
+  it("neutralizes formula-injection payloads in string cells", () => {
+    // Leading @, +, - would be executed by Excel/Sheets; prefix with an apostrophe.
+    expect(toCsv(["name"], [["@SUM(A1:A9)"]])).toBe("name\r\n'@SUM(A1:A9)");
+    expect(toCsv(["name"], [["+1-800-EVIL"]])).toBe("name\r\n'+1-800-EVIL");
+    expect(toCsv(["name"], [["-2+3"]])).toBe("name\r\n'-2+3");
+    // A leading = plus embedded quotes: apostrophe-prefixed, then whole cell
+    // quoted because it contains ".
+    expect(toCsv(["name"], [['=HYPERLINK("http://evil")']])).toBe(
+      "name\r\n\"'=HYPERLINK(\"\"http://evil\"\")\"",
+    );
+  });
+
+  it("does NOT prefix numeric cells (legit negatives stay intact)", () => {
+    expect(toCsv(["score"], [[-5]])).toBe("score\r\n-5");
+    expect(toCsv(["score"], [[7.5]])).toBe("score\r\n7.5");
+  });
+
+  it("leaves ordinary text untouched", () => {
+    expect(toCsv(["name"], [["Marcus Johnson"]])).toBe("name\r\nMarcus Johnson");
+  });
 });
