@@ -122,7 +122,13 @@ export default function ManageTemplate() {
   }, [organizationId, role, inviteOpen]);
 
   const revokeInvite = async (id: string) => {
-    await supabase.from("organization_invites").update({ status: "expired" }).eq("id", id);
+    // Hard-delete so the (organization_id, email) unique slot frees up — a
+    // soft "expired" status would linger and block re-inviting that email.
+    const { error } = await supabase.from("organization_invites").delete().eq("id", id);
+    if (error) {
+      toast.error("Couldn't revoke invite");
+      return;
+    }
     setPendingInvites(prev => prev.filter(i => i.id !== id));
     toast.success("Invite revoked");
   };

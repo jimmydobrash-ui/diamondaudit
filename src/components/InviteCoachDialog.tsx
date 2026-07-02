@@ -48,6 +48,20 @@ export default function InviteCoachDialog({ open, onClose }: Props) {
     const cleanEmail = email.trim().toLowerCase();
 
     try {
+      // Clear any prior invite for this email first. The table has a
+      // UNIQUE(organization_id, email) constraint, so a leftover row — revoked,
+      // expired, or already accepted — would otherwise block re-inviting the
+      // same person with a duplicate-key error. Re-inviting means "make sure
+      // this person has a fresh, valid invite", so we replace rather than fail.
+      // Match with eq (not ilike) on the already-lowercased email: invites are
+      // always stored lowercase, and ilike would treat _/% in an address as
+      // wildcards and could delete a different invite.
+      await supabase
+        .from("organization_invites")
+        .delete()
+        .eq("organization_id", organizationId)
+        .eq("email", cleanEmail);
+
       const { data: invite, error } = await supabase
         .from("organization_invites")
         .insert({
@@ -58,28 +72,21 @@ export default function InviteCoachDialog({ open, onClose }: Props) {
         })
         .select("id")
         .single();
+      if (error) throw error;
 
-      if (error) {
-        if (error.code === "23505") {
-          toast.error("This email has already been invited");
-        } else {
-          throw error;
-        }
-      } else {
-        const link = `${window.location.origin}/auth?invite=1&email=${encodeURIComponent(cleanEmail)}`;
-        setInviteLink(link);
+      const link = `${window.location.origin}/auth?invite=1&email=${encodeURIComponent(cleanEmail)}`;
+      setInviteLink(link);
 
-        // Try to email the link. Falls back to the copy-link UX if the email
-        // function isn't deployed/configured yet, so invites always work.
-        try {
-          const { error: fnErr } = await supabase.functions.invoke("send-invite", {
-            body: { inviteId: invite.id },
-          });
-          if (fnErr) throw fnErr;
-          toast.success(`Invite emailed to ${cleanEmail}`);
-        } catch {
-          toast.success("Invite created — share the link with the coach.");
-        }
+      // Try to email the link. Falls back to the copy-link UX if the email
+      // function isn't deployed/configured yet, so invites always work.
+      try {
+        const { error: fnErr } = await supabase.functions.invoke("send-invite", {
+          body: { inviteId: invite.id },
+        });
+        if (fnErr) throw fnErr;
+        toast.success(`Invite emailed to ${cleanEmail}`);
+      } catch {
+        toast.success("Invite created — share the link with the coach.");
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
