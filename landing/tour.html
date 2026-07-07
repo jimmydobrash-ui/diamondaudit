@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Product tour — DiamondAudit</title>
+    <meta
+      name="description"
+      content="A look inside a tryout run on DiamondAudit — evaluate every athlete the same way, roll every coach's scores into one leaderboard, and build your roster on the field."
+    />
+
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Product tour — DiamondAudit" />
+    <meta property="og:description" content="A look inside a tryout run on DiamondAudit." />
+    <meta property="og:image" content="https://diamondaudit.io/screenshots/app-leaderboard.webp" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0b0e13;
+        --bg-soft: #11151c;
+        --surface: #151a22;
+        --border: #232a34;
+        --text: #e8eaed;
+        --muted: #98a2b0;
+        --faint: #6b7482;
+        --accent: #ef4444;
+        --accent-strong: #dc2626;
+        --accent-soft: rgba(239, 68, 68, 0.12);
+        --radius: 14px;
+        --maxw: 1080px;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html { scroll-behavior: smooth; }
+      body {
+        background: var(--bg); color: var(--text);
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        line-height: 1.6; -webkit-font-smoothing: antialiased;
+      }
+      h1, h2, h3 { font-family: "Space Grotesk", "Inter", sans-serif; line-height: 1.1; letter-spacing: -0.02em; }
+      a { color: inherit; text-decoration: none; }
+      .container { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+      .accent { color: var(--accent); }
+
+      .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; font-size: 15px; border-radius: 10px; padding: 12px 20px; transition: all 0.15s ease; cursor: pointer; border: 1px solid transparent; }
+      .btn-primary { background: var(--accent); color: #fff; }
+      .btn-primary:hover { background: var(--accent-strong); transform: translateY(-1px); }
+      .btn-ghost { color: var(--text); border-color: var(--border); background: transparent; }
+      .btn-ghost:hover { border-color: var(--muted); }
+      .btn-text { color: var(--muted); font-weight: 500; }
+      .btn-text:hover { color: var(--text); }
+      a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+      header { position: sticky; top: 0; z-index: 50; background: rgba(11, 14, 19, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+      .nav { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+      .brand { display: flex; align-items: center; gap: 10px; font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 18px; }
+      .brand img { height: 30px; width: auto; }
+      .nav-right { display: flex; align-items: center; gap: 18px; }
+
+      /* Hero */
+      .hero { padding: 72px 0 8px; text-align: center; }
+      .eyebrow { display: inline-block; font-size: 13px; font-weight: 600; color: var(--accent); background: var(--accent-soft); padding: 5px 12px; border-radius: 999px; margin-bottom: 20px; }
+      .hero h1 { font-size: 44px; font-weight: 700; margin-bottom: 16px; }
+      .hero p { font-size: 18px; color: var(--muted); max-width: 580px; margin: 0 auto 30px; }
+      .hero-cta { display: flex; gap: 13px; justify-content: center; flex-wrap: wrap; }
+
+      /* Product screenshot frame */
+      .shot { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface); box-shadow: 0 30px 60px -20px rgba(0,0,0,0.6); }
+      .shot img { display: block; width: 100%; height: auto; }
+      .shot-phone { border-radius: 26px; box-shadow: 0 30px 60px -20px rgba(0,0,0,0.75); max-width: 300px; }
+
+      /* Alternating feature rows */
+      .rows { padding: 40px 0 0; }
+      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; padding: 52px 0; }
+      .row + .row { border-top: 1px solid var(--border); }
+      .row.reverse .row-copy { order: 2; }
+      .step-label { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+      .step-label .n { width: 22px; height: 22px; border-radius: 7px; background: var(--accent-soft); display: grid; place-items: center; font-family: "Space Grotesk", sans-serif; font-size: 12px; }
+      .row-copy h2 { font-size: 29px; font-weight: 700; margin-bottom: 14px; }
+      .row-copy p { color: var(--muted); font-size: 16.5px; margin-bottom: 18px; }
+      .row-copy ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+      .row-copy li { display: flex; gap: 10px; font-size: 15px; color: #cfd6de; }
+      .row-copy li .ck { flex-shrink: 0; color: var(--accent); font-size: 13px; margin-top: 3px; }
+
+      /* Device band */
+      .device { background: var(--bg-soft); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 60px 0; text-align: center; }
+      .device h2 { font-size: 30px; margin-bottom: 14px; }
+      .device p { color: var(--muted); font-size: 17px; max-width: 520px; margin: 0 auto 34px; }
+      .device .phone-wrap { display: flex; justify-content: center; }
+
+      /* Closing */
+      .closing { text-align: center; padding: 76px 0 88px; }
+      .closing h2 { font-size: 34px; margin-bottom: 14px; }
+      .closing p { color: var(--muted); font-size: 17px; margin-bottom: 26px; }
+      .closing .hero-cta { justify-content: center; }
+      .closing .note { font-size: 13px; color: var(--faint); margin-top: 18px; }
+
+      footer { border-top: 1px solid var(--border); padding: 30px 0; }
+      .foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+      .foot .brand-sm { font-family: "Space Grotesk", sans-serif; font-weight: 600; }
+      .foot-links { display: flex; gap: 20px; font-size: 14px; color: var(--muted); }
+      .foot-links a:hover { color: var(--text); }
+
+      @media (max-width: 860px) {
+        .hero h1 { font-size: 34px; }
+        .row { grid-template-columns: 1fr; gap: 28px; padding: 44px 0; }
+        .row.reverse .row-copy { order: 0; }
+        .nav-right .btn-text { display: none; }
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <div class="container nav">
+        <a class="brand" href="/">
+          <img src="/logo-256.png" alt="DiamondAudit" />
+          <span>DiamondAudit</span>
+        </a>
+        <div class="nav-right">
+          <a class="btn-text" href="/pricing.html">Pricing</a>
+          <a class="btn-text" href="https://app.diamondaudit.io/auth">Sign in</a>
+          <a class="btn btn-primary" href="https://app.diamondaudit.io/auth">Request access →</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="container">
+        <span class="eyebrow">Product tour</span>
+        <h1>A look inside a tryout run on DiamondAudit.</h1>
+        <p>From the first slider to the final roster — here's what your staff actually uses on the field.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="https://app.diamondaudit.io/auth">Request access →</a>
+          <a class="btn btn-ghost" href="/pricing.html">See pricing</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURE ROWS -->
+    <section class="rows">
+      <div class="container">
+        <!-- 1. Evaluate -->
+        <div class="row">
+          <div class="row-copy">
+            <span class="step-label"><span class="n">1</span> Score</span>
+            <h2>The same rubric in front of every coach.</h2>
+            <p>Every athlete is scored on the same calibrated 0–10 scale, with the rubric right on screen — so one coach's 7 means what the next coach's 7 means.</p>
+            <ul>
+              <li><span class="ck">✓</span> A calibration ruler shows what each score means as you slide.</li>
+              <li><span class="ck">✓</span> Position-aware — catchers get the catching category, others don't.</li>
+              <li><span class="ck">✓</span> Number fields for measurables like velo and pop time.</li>
+              <li><span class="ck">✓</span> Grade Offer / Bubble / Pass without leaving the screen.</li>
+            </ul>
+          </div>
+          <div class="shot">
+            <img src="/screenshots/app-evaluate.webp" width="1280" height="860"
+              alt="DiamondAudit evaluation screen with calibrated 1–10 sliders, the scoring rubric strip, and grade buttons" />
+          </div>
+        </div>
+
+        <!-- 2. Leaderboard -->
+        <div class="row reverse">
+          <div class="row-copy">
+            <span class="step-label"><span class="n">2</span> Roll up</span>
+            <h2>Every coach's scores become one number.</h2>
+            <p>DiamondAudit averages the skills each coach scored into a single, ranked leaderboard — on one 0–10 scale, the same on every screen — while keeping each coach's view when you need to compare.</p>
+            <ul>
+              <li><span class="ck">✓</span> Filter by age group, sort by any skill.</li>
+              <li><span class="ck">✓</span> Tier labels from the rubric (Elite, Above Avg, Average…).</li>
+              <li><span class="ck">✓</span> Export the whole board to CSV in one tap.</li>
+            </ul>
+          </div>
+          <div class="shot">
+            <img src="/screenshots/app-leaderboard.webp" width="1280" height="860" loading="lazy"
+              alt="DiamondAudit leaderboard ranking players by combined evaluation score with tier labels and age filters" />
+          </div>
+        </div>
+
+        <!-- 3. Team Builder -->
+        <div class="row">
+          <div class="row-copy">
+            <span class="step-label"><span class="n">3</span> Decide</span>
+            <h2>Build the roster before you leave the field.</h2>
+            <p>Sort the room into Offer, Bubble, and Pass — every call backed by the scores your staff actually gave, and saved as a record you can point to when a decision gets questioned.</p>
+            <ul>
+              <li><span class="ck">✓</span> One tap to grade; the summary updates live.</li>
+              <li><span class="ck">✓</span> Each grade is stored per coach, per player.</li>
+              <li><span class="ck">✓</span> A defensible record behind every cut.</li>
+            </ul>
+          </div>
+          <div class="shot">
+            <img src="/screenshots/app-team-builder.webp" width="1280" height="860" loading="lazy"
+              alt="DiamondAudit Team Builder showing players graded Offer, Bubble, or Pass with their scores and tiers" />
+          </div>
+        </div>
+
+        <!-- 4. Dashboard -->
+        <div class="row reverse">
+          <div class="row-copy">
+            <span class="step-label"><span class="n">4</span> At a glance</span>
+            <h2>The whole tryout, the moment you open it.</h2>
+            <p>Players in, evaluations done, average and top scores, and the top of the board — a live read on where the tryout stands without digging.</p>
+            <ul>
+              <li><span class="ck">✓</span> Stats update as coaches submit.</li>
+              <li><span class="ck">✓</span> Top players surfaced automatically.</li>
+              <li><span class="ck">✓</span> Jump straight into evaluating or results.</li>
+            </ul>
+          </div>
+          <div class="shot">
+            <img src="/screenshots/app-dashboard.webp" width="1280" height="860" loading="lazy"
+              alt="DiamondAudit dashboard showing tryout overview stats and a ranked top-players list" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ON ANY DEVICE -->
+    <section class="device">
+      <div class="container">
+        <h2>Run the whole tryout from your phone.</h2>
+        <p>Every coach evaluates on the device already in their pocket — no clipboards, no laptop at the table. Scores sync to one shared board in real time.</p>
+        <div class="phone-wrap">
+          <div class="shot shot-phone">
+            <img src="/screenshots/app-evaluate-mobile.webp" width="390" height="844" loading="lazy"
+              alt="DiamondAudit evaluation screen on a phone, scoring a player on the field" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CLOSING -->
+    <section class="closing">
+      <div class="container">
+        <h2>Run your next tryout on the record.</h2>
+        <p>DiamondAudit is invite-only while we onboard programs one at a time.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="https://app.diamondaudit.io/auth">Request access →</a>
+          <a class="btn btn-ghost" href="/pricing.html">See pricing</a>
+        </div>
+        <p class="note">Tell us about your program and we'll get you set up.</p>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+      <div class="container foot">
+        <span class="brand-sm">DiamondAudit</span>
+        <div class="foot-links">
+          <span>© DoDiDe LLC</span>
+          <a href="/">Home</a>
+          <a href="/pricing.html">Pricing</a>
+          <a href="/privacy.html">Privacy</a>
+          <a href="/terms.html">Terms</a>
+          <a href="https://app.diamondaudit.io/auth">Sign in</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
