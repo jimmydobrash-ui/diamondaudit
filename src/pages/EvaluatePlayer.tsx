@@ -6,13 +6,14 @@ import EvaluationSlider from "@/components/EvaluationSlider";
 import EvaluationNumberInput from "@/components/EvaluationNumberInput";
 import ScoringRuler from "@/components/ScoringRuler";
 import { playerAgeGroup } from "@/lib/mock-data";
+import { compareForTryout } from "@/lib/rosterOrder";
 import { visibleEvalCategories, scoresForVisiblePlayer } from "@/lib/scoring";
 import { usePlayers } from "@/hooks/usePlayers";
 import { usePlayerEvaluation, useSaveEvaluation } from "@/hooks/useEvaluations";
 import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
 import { useMyPlayerGrades, useSetPlayerGrade, type PlayerGradeValue } from "@/hooks/usePlayerGrades";
 import GradeBadge from "@/components/GradeBadge";
-import { ArrowLeft, ArrowRight, Save, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Save, Check, Search } from "lucide-react";
 import { toast } from "sonner";
 
 export default function EvaluatePlayer() {
@@ -30,6 +31,31 @@ export default function EvaluatePlayer() {
   const [scores, setScores] = useState<Record<string, number | null>>({});
   const [notes, setNotes] = useState("");
   const [saved, setSaved] = useState(false);
+  const [search, setSearch] = useState("");
+
+  // Players in the same age group as the current one, in tryout running order
+  // (jersey number ascending, un-numbered last). Next/prev walk this so "next"
+  // matches who's physically up next rather than the alphabetical roster.
+  const groupOrder = useMemo(() => {
+    if (!player) return [];
+    const group = playerAgeGroup(player);
+    return players.filter(p => playerAgeGroup(p) === group).slice().sort(compareForTryout);
+  }, [players, player]);
+  const orderIndex = groupOrder.findIndex(p => p.id === playerId);
+  const prevPlayer = orderIndex > 0 ? groupOrder[orderIndex - 1] : null;
+  const nextPlayer = orderIndex >= 0 && orderIndex < groupOrder.length - 1 ? groupOrder[orderIndex + 1] : null;
+
+  // Jump-to-player search across the whole roster (name or jersey #).
+  const searchMatches = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [];
+    return players
+      .filter(p =>
+        `${p.first_name} ${p.last_name}`.toLowerCase().includes(q) ||
+        String(p.jersey_number ?? "").includes(q),
+      )
+      .slice(0, 8);
+  }, [players, search]);
   // Which player we've already populated the form for, so we load saved scores
   // exactly once per player (and don't clobber the coach's in-progress edits).
   const populatedForRef = useRef<string | null>(null);
@@ -92,9 +118,10 @@ export default function EvaluatePlayer() {
     // (e.g. dropped wifi on the field) would navigate away and lose the eval.
     const ok = await handleSave();
     if (!ok) return;
-    const currentIndex = players.findIndex(p => p.id === playerId);
-    if (currentIndex < players.length - 1) {
-      navigate(`/evaluate/${players[currentIndex + 1].id}`);
+    // Advance to the next player in the current age group (tryout order); when
+    // the group is finished, fall back to the evaluate list.
+    if (nextPlayer) {
+      navigate(`/evaluate/${nextPlayer.id}`);
     } else {
       navigate("/evaluate");
     }
@@ -119,9 +146,6 @@ export default function EvaluatePlayer() {
   }
 
   const currentCategory = visibleCategories[activeCategory];
-  const playerIndex = players.findIndex(p => p.id === playerId);
-  const prevPlayer = playerIndex > 0 ? players[playerIndex - 1] : null;
-  const nextPlayer = playerIndex < players.length - 1 ? players[playerIndex + 1] : null;
 
   return (
     <AppLayout>
@@ -145,6 +169,32 @@ export default function EvaluatePlayer() {
             </div>
           </div>
         </motion.div>
+
+        {/* Jump to any player by name or jersey # */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Jump to player by name or #"
+            className="w-full h-10 pl-9 pr-3 rounded-xl bg-secondary text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+          {searchMatches.length > 0 && (
+            <div className="absolute z-20 mt-1 w-full rounded-xl bg-card card-elevated overflow-hidden">
+              {searchMatches.map(m => (
+                <button
+                  key={m.id}
+                  onClick={() => { setSearch(""); navigate(`/evaluate/${m.id}`); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-secondary/60 transition-colors"
+                >
+                  <span className="w-9 text-xs font-bold text-muted-foreground flex-shrink-0">#{m.jersey_number ?? "?"}</span>
+                  <span className="flex-1 truncate text-sm text-foreground">{m.first_name} {m.last_name}</span>
+                  <span className="text-[10px] text-muted-foreground flex-shrink-0">{playerAgeGroup(m)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
           {visibleCategories.map((cat, i) => (
@@ -239,7 +289,7 @@ export default function EvaluatePlayer() {
               <ArrowLeft className="w-3 h-3" /> #{prevPlayer.jersey_number} {prevPlayer.last_name}
             </button>
           ) : <span />}
-          <span>{playerIndex + 1} of {players.length}</span>
+          <span>{orderIndex >= 0 ? orderIndex + 1 : "–"} of {groupOrder.length} · {playerAgeGroup(player)}</span>
           {nextPlayer ? (
             <button onClick={() => navigate(`/evaluate/${nextPlayer.id}`)} className="flex items-center gap-1 touch-target">
               #{nextPlayer.jersey_number} {nextPlayer.last_name} <ArrowRight className="w-3 h-3" />
