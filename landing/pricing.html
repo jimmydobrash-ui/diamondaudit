@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pricing — DiamondAudit</title>
+    <meta
+      name="description"
+      content="Start free. Pay $5 per player per tryout, or go year-round with a $1,000 club license. Tryout evaluation pricing built for baseball and softball programs."
+    />
+
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Pricing — DiamondAudit" />
+    <meta property="og:description" content="Start free. $5 / player / tryout, or $1,000 / year per club." />
+    <meta property="og:image" content="https://diamondaudit.io/screenshots/app-dashboard.webp" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0b0e13;
+        --bg-soft: #11151c;
+        --surface: #151a22;
+        --surface-2: #1b212b;
+        --border: #232a34;
+        --text: #e8eaed;
+        --muted: #98a2b0;
+        --faint: #6b7482;
+        --accent: #ef4444;
+        --accent-strong: #dc2626;
+        --accent-soft: rgba(239, 68, 68, 0.12);
+        --good: #34d399;
+        --radius: 14px;
+        --maxw: 1080px;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html { scroll-behavior: smooth; }
+      body {
+        background: var(--bg); color: var(--text);
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        line-height: 1.6; -webkit-font-smoothing: antialiased;
+      }
+      h1, h2, h3 { font-family: "Space Grotesk", "Inter", sans-serif; line-height: 1.1; letter-spacing: -0.02em; }
+      a { color: inherit; text-decoration: none; }
+      .container { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+      .accent { color: var(--accent); }
+
+      .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; font-size: 15px; border-radius: 10px; padding: 12px 20px; transition: all 0.15s ease; cursor: pointer; border: 1px solid transparent; }
+      .btn-primary { background: var(--accent); color: #fff; }
+      .btn-primary:hover { background: var(--accent-strong); transform: translateY(-1px); }
+      .btn-ghost { color: var(--text); border-color: var(--border); background: transparent; }
+      .btn-ghost:hover { border-color: var(--muted); }
+      .btn-block { width: 100%; }
+      .btn-text { color: var(--muted); font-weight: 500; }
+      .btn-text:hover { color: var(--text); }
+      a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+      header { position: sticky; top: 0; z-index: 50; background: rgba(11, 14, 19, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+      .nav { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+      .brand { display: flex; align-items: center; gap: 10px; font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 18px; }
+      .brand img { height: 30px; width: auto; }
+      .nav-right { display: flex; align-items: center; gap: 18px; }
+
+      .hero { padding: 72px 0 24px; text-align: center; }
+      .eyebrow { display: inline-block; font-size: 13px; font-weight: 600; color: var(--accent); background: var(--accent-soft); padding: 5px 12px; border-radius: 999px; margin-bottom: 20px; }
+      .hero h1 { font-size: 42px; font-weight: 700; margin-bottom: 16px; }
+      .hero p { font-size: 18px; color: var(--muted); max-width: 560px; margin: 0 auto; }
+      .invite-note { max-width: 620px; margin: 22px auto 0; font-size: 13px; color: var(--faint); border: 1px solid var(--border); border-radius: 999px; padding: 8px 16px; }
+
+      /* Tier cards */
+      .tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; padding: 40px 0 8px; align-items: stretch; }
+      .tier { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 26px; display: flex; flex-direction: column; }
+      .tier.feature { border-color: rgba(239, 68, 68, 0.4); background: linear-gradient(180deg, rgba(239, 68, 68, 0.06), var(--surface)); position: relative; }
+      .tier-badge { position: absolute; top: -11px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 4px 12px; border-radius: 999px; }
+      .tier-name { font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 15px; letter-spacing: 0.02em; text-transform: uppercase; color: var(--muted); }
+      .tier.feature .tier-name { color: var(--accent); }
+      .price { display: flex; align-items: baseline; gap: 4px; margin: 14px 0 4px; }
+      .price .amt { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 40px; letter-spacing: -0.03em; }
+      .price .per { color: var(--muted); font-size: 14px; font-weight: 500; }
+      .tier-tag { color: var(--faint); font-size: 13px; min-height: 20px; margin-bottom: 20px; }
+      .tier ul { list-style: none; display: flex; flex-direction: column; gap: 11px; margin-bottom: 26px; flex: 1; }
+      .tier li { display: flex; gap: 10px; font-size: 14.5px; color: #cfd6de; }
+      .tier li .ck { flex-shrink: 0; color: var(--good); font-size: 13px; margin-top: 2px; }
+      .tier li.dim { color: var(--faint); }
+      .tier li.dim .ck { color: var(--faint); }
+
+      /* Value / break-even band */
+      .value { background: var(--bg-soft); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-top: 56px; padding: 44px 0; }
+      .value .container { max-width: 760px; text-align: center; }
+      .value h2 { font-size: 26px; margin-bottom: 12px; }
+      .value p { color: var(--muted); font-size: 17px; }
+      .value .math { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 8px 14px; margin-top: 22px; font-size: 14px; color: var(--muted); }
+      .value .math b { color: var(--text); font-weight: 600; }
+      .value .math .chip { background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 7px 14px; }
+
+      /* FAQ */
+      .faq { padding: 64px 0; }
+      .faq h2 { font-size: 28px; text-align: center; margin-bottom: 36px; }
+      .faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 40px; max-width: 900px; margin: 0 auto; }
+      .faq-item h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+      .faq-item p { color: var(--muted); font-size: 14.5px; }
+
+      /* Closing */
+      .closing { text-align: center; padding: 24px 0 88px; }
+      .closing h2 { font-size: 30px; margin-bottom: 14px; }
+      .closing p { color: var(--muted); font-size: 16px; margin-bottom: 26px; }
+      .closing .cta { display: flex; gap: 13px; justify-content: center; flex-wrap: wrap; }
+
+      footer { border-top: 1px solid var(--border); padding: 30px 0; }
+      .foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+      .foot .brand-sm { font-family: "Space Grotesk", sans-serif; font-weight: 600; }
+      .foot-links { display: flex; gap: 20px; font-size: 14px; color: var(--muted); }
+      .foot-links a:hover { color: var(--text); }
+
+      @media (max-width: 860px) {
+        .hero h1 { font-size: 34px; }
+        .tiers { grid-template-columns: 1fr; gap: 22px; }
+        .tier.feature { order: -1; }
+        .faq-grid { grid-template-columns: 1fr; gap: 22px; }
+        .nav-right .btn-text { display: none; }
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <div class="container nav">
+        <a class="brand" href="/">
+          <img src="/logo-256.png" alt="DiamondAudit" />
+          <span>DiamondAudit</span>
+        </a>
+        <div class="nav-right">
+          <a class="btn-text" href="/#how">How it works</a>
+          <a class="btn-text" href="https://app.diamondaudit.io/auth">Sign in</a>
+          <a class="btn btn-primary" href="https://app.diamondaudit.io/auth">Request access →</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="container">
+        <span class="eyebrow">Pricing</span>
+        <h1>Pricing built for how tryouts actually work.</h1>
+        <p>Start free on a small tryout. Pay per player when you run one, or go year-round with a club license.</p>
+        <p class="invite-note">
+          DiamondAudit is invite-only while we onboard programs one at a time — this is what you'll pay once your program is set up.
+        </p>
+      </div>
+    </section>
+
+    <!-- TIERS -->
+    <section>
+      <div class="container tiers">
+        <!-- Free -->
+        <div class="tier">
+          <span class="tier-name">Free</span>
+          <div class="price"><span class="amt">$0</span></div>
+          <p class="tier-tag">Try it on a small tryout.</p>
+          <ul>
+            <li><span class="ck">✓</span> Up to <strong>25 players</strong></li>
+            <li><span class="ck">✓</span> Up to <strong>2 evaluators</strong></li>
+            <li><span class="ck">✓</span> Full features — nothing held back</li>
+            <li><span class="ck">✓</span> Custom scoring template</li>
+            <li><span class="ck">✓</span> Shared cross-coach leaderboard</li>
+            <li><span class="ck">✓</span> Offer / Bubble / Pass + CSV export</li>
+          </ul>
+          <a class="btn btn-ghost btn-block" href="https://app.diamondaudit.io/auth">Request early access</a>
+        </div>
+
+        <!-- Club License (featured) -->
+        <div class="tier feature">
+          <span class="tier-badge">Best value</span>
+          <span class="tier-name">Club license</span>
+          <div class="price"><span class="amt">$1,000</span><span class="per">/ year</span></div>
+          <p class="tier-tag">Year-round access for your whole club.</p>
+          <ul>
+            <li><span class="ck">✓</span> <strong>Unlimited</strong> players</li>
+            <li><span class="ck">✓</span> <strong>Unlimited</strong> evaluators</li>
+            <li><span class="ck">✓</span> <strong>Unlimited tryouts, all year</strong> — camps, mid-season looks, combines</li>
+            <li><span class="ck">✓</span> Everything in Per Tryout</li>
+            <li><span class="ck">✓</span> Priority support</li>
+          </ul>
+          <a class="btn btn-primary btn-block" href="https://app.diamondaudit.io/auth">Book a walkthrough</a>
+        </div>
+
+        <!-- Per Tryout -->
+        <div class="tier">
+          <span class="tier-name">Per tryout</span>
+          <div class="price"><span class="amt">$5</span><span class="per">/ player / tryout</span></div>
+          <p class="tier-tag">Pay only for the tryouts you run.</p>
+          <ul>
+            <li><span class="ck">✓</span> <strong>Unlimited</strong> players</li>
+            <li><span class="ck">✓</span> <strong>Unlimited</strong> evaluators</li>
+            <li><span class="ck">✓</span> Everything in Free</li>
+            <li><span class="ck">✓</span> Billed per player, per tryout</li>
+            <li><span class="ck">✓</span> No commitment between events</li>
+          </ul>
+          <a class="btn btn-ghost btn-block" href="https://app.diamondaudit.io/auth">Request access</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- VALUE / BREAK-EVEN -->
+    <section class="value">
+      <div class="container">
+        <h2>When does a club license pay for itself?</h2>
+        <p>At $5 per player, the $1,000 license breaks even at <strong class="accent">200 players</strong> — and most clubs clear that in a single tryout weekend, before the season's camps and mid-season looks even start.</p>
+        <div class="math">
+          <span class="chip"><b>200 players</b> × $5 = $1,000 per tryout</span>
+          <span class="chip"><b>One license</b> covers every tryout, all year</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="faq">
+      <div class="container">
+        <h2>Questions</h2>
+        <div class="faq-grid">
+          <div class="faq-item">
+            <h3>What counts as a "player"?</h3>
+            <p>An athlete on your roster for a tryout. On Per Tryout, you're billed for the players you evaluate at that event — not your whole database.</p>
+          </div>
+          <div class="faq-item">
+            <h3>Can I switch to a club license later?</h3>
+            <p>Yes. Start free or per-tryout, and move to the year-round license whenever the math makes sense for your program.</p>
+          </div>
+          <div class="faq-item">
+            <h3>Is my program's data mine?</h3>
+            <p>Always. Your roster, scores, and results belong to your organization, and you can export the full record to CSV anytime.</p>
+          </div>
+          <div class="faq-item">
+            <h3>How is players' data protected?</h3>
+            <p>Every organization's data is isolated — coaches only ever see their own program's players and evaluations. See our <a class="accent" href="/privacy.html">Privacy Policy</a>.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CLOSING -->
+    <section class="closing">
+      <div class="container">
+        <h2>Not sure which fits your program?</h2>
+        <p>Tell us how many athletes you run through tryouts and we'll point you to the right plan.</p>
+        <div class="cta">
+          <a class="btn btn-primary" href="https://app.diamondaudit.io/auth">Request access →</a>
+          <a class="btn btn-ghost" href="https://app.diamondaudit.io/auth">Book a walkthrough</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+      <div class="container foot">
+        <span class="brand-sm">DiamondAudit</span>
+        <div class="foot-links">
+          <span>© DoDiDe LLC</span>
+          <a href="/">Home</a>
+          <a href="/privacy.html">Privacy</a>
+          <a href="/terms.html">Terms</a>
+          <a href="https://app.diamondaudit.io/auth">Sign in</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
