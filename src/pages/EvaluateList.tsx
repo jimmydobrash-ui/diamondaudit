@@ -4,6 +4,7 @@ import AppLayout from "@/components/AppLayout";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useEvaluations } from "@/hooks/useEvaluations";
 import { playerAgeGroup } from "@/lib/mock-data";
+import { compareForTryout } from "@/lib/rosterOrder";
 import { ClipboardList, ChevronRight } from "lucide-react";
 import { useMemo } from "react";
 import { useMyPlayerGrades, type PlayerGradeValue } from "@/hooks/usePlayerGrades";
@@ -24,6 +25,10 @@ export default function EvaluateList() {
     grades.forEach(g => { m[g.player_id] = g.grade; });
     return m;
   }, [grades]);
+
+  // Show the roster in tryout running order (age group, then jersey number)
+  // so it matches who's on the field, not alphabetical.
+  const orderedPlayers = useMemo(() => players.slice().sort(compareForTryout), [players]);
 
   const playerScores = useMemo(() => {
     const aggregates = aggregateScoresByPlayer(
@@ -53,7 +58,7 @@ export default function EvaluateList() {
             Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="h-16 rounded-xl bg-secondary animate-pulse" />
             ))
-          ) : players.map((player, i) => {
+          ) : orderedPlayers.map((player, i) => {
             const score = playerScores[player.id];
             return (
               <motion.div key={player.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
