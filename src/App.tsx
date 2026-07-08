@@ -21,6 +21,7 @@ const Leaderboard = lazy(() => import("./pages/Leaderboard"));
 const ManageTemplate = lazy(() => import("./pages/ManageTemplate"));
 const TeamBuilder = lazy(() => import("./pages/TeamBuilder"));
 const PlayerDetail = lazy(() => import("./pages/PlayerDetail"));
+const PlayerReport = lazy(() => import("./pages/PlayerReport"));
 const ScoringGuide = lazy(() => import("./pages/ScoringGuide"));
 const Auth = lazy(() => import("./pages/Auth"));
 const AuthRecover = lazy(() => import("./pages/AuthRecover"));
@@ -65,6 +66,7 @@ const AppRoutes = () => (
       <Route path="/players/add" element={<ProtectedRoute><AddPlayer /></ProtectedRoute>} />
       <Route path="/players/import" element={<ProtectedRoute><ImportPlayers /></ProtectedRoute>} />
       <Route path="/players/:playerId" element={<ProtectedRoute><PlayerDetail /></ProtectedRoute>} />
+      <Route path="/players/:playerId/report" element={<ProtectedRoute><PlayerReport /></ProtectedRoute>} />
       <Route path="/players/:playerId/edit" element={<ProtectedRoute><EditPlayer /></ProtectedRoute>} />
       <Route path="/evaluate" element={<ProtectedRoute><EvaluateList /></ProtectedRoute>} />
       <Route path="/evaluate/:playerId" element={<ProtectedRoute><EvaluatePlayer /></ProtectedRoute>} />

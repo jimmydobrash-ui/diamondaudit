@@ -18,7 +18,7 @@ import {
   calcCategoryAvg,
   visibleEvalCategories,
 } from "@/lib/scoring";
-import { ArrowLeft, ClipboardList, Users, Trash2, Pencil } from "lucide-react";
+import { ArrowLeft, ClipboardList, Users, Trash2, Pencil, FileText } from "lucide-react";
 
 type Scores = Record<string, number>;
 
@@ -171,13 +171,24 @@ export default function PlayerDetail() {
         )}
 
         {/* Evaluate CTA */}
-        <Link
-          to={`/evaluate/${playerId}`}
-          className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2"
-        >
-          <ClipboardList className="w-4 h-4" />
-          Evaluate player
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            to={`/evaluate/${playerId}`}
+            className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2"
+          >
+            <ClipboardList className="w-4 h-4" />
+            Evaluate player
+          </Link>
+          {playerEvals.length > 0 && (
+            <Link
+              to={`/players/${playerId}/report`}
+              className="h-12 px-4 rounded-xl bg-secondary text-foreground font-semibold text-sm flex items-center justify-center gap-2"
+            >
+              <FileText className="w-4 h-4" />
+              Report card
+            </Link>
+          )}
+        </div>
 
         {/* Delete (admin only) */}
         {role === "admin" && (
