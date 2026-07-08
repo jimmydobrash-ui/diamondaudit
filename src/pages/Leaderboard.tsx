@@ -6,7 +6,7 @@ import { usePlayers } from "@/hooks/usePlayers";
 import { useEvaluations } from "@/hooks/useEvaluations";
 import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
 import { playerAgeGroup, sortAgeGroups } from "@/lib/mock-data";
-import { calcSliderOverall, calcCategoryAvg, aggregateScoresByPlayer, scoreTier } from "@/lib/scoring";
+import { calcSliderOverall, calcCategoryAvg, categoryMeasurables, primaryMeasurable, aggregateScoresByPlayer, scoreTier } from "@/lib/scoring";
 import { toCsv, downloadCsv } from "@/lib/csv";
 import OverallScore from "@/components/OverallScore";
 import { BarChart3, Trophy, Download } from "lucide-react";
@@ -55,22 +55,40 @@ export default function Leaderboard() {
         if (sortBy === "overall") return b.overall - a.overall;
         const cat = categories.find(c => c.id === sortBy);
         if (!cat) return 0;
-        const aScore = calcCategoryAvg(a.scores, cat) ?? 0;
-        const bScore = calcCategoryAvg(b.scores, cat) ?? 0;
-        return bScore - aScore;
+        const aSlider = calcCategoryAvg(a.scores, cat);
+        const bSlider = calcCategoryAvg(b.scores, cat);
+        // Category has slider scores → rank by the 0–10 average (higher first).
+        if (aSlider !== null || bSlider !== null) return (bSlider ?? 0) - (aSlider ?? 0);
+        // Measurable-only category (e.g. Running) → rank by its primary
+        // measurable; players missing the measurement sort last.
+        const prim = primaryMeasurable(cat);
+        if (!prim) return 0;
+        const av = a.scores[prim.id];
+        const bv = b.scores[prim.id];
+        const aHas = av !== undefined && av !== null;
+        const bHas = bv !== undefined && bv !== null;
+        if (!aHas && !bHas) return 0;
+        if (!aHas) return 1;
+        if (!bHas) return -1;
+        return prim.lowerIsBetter ? av - bv : bv - av;
       });
   }, [players, playerAggregates, sortBy, ageFilter, categories]);
 
   const handleExport = () => {
+    // Measurable (number-type) skills — times/velos that are excluded from the
+    // 0–10 overall but matter for team-building, so they get their own columns.
+    const measurableSkills = categories.flatMap(c => c.skills.filter(s => s.type === "number"));
     const headers = [
       "Rank", "Jersey", "First Name", "Last Name", "Age Group", "Positions",
       "Bats", "Throws", "Overall", "Tier",
       ...categories.map(c => c.name),
+      ...measurableSkills.map(s => (s.unit ? `${s.label} (${s.unit})` : s.label)),
       "Evaluations",
     ];
     const rows = ranked.map((item, i) => {
       const p = item.player;
       const catVals = categories.map(c => item.categoryScores.find(cs => cs.id === c.id)?.avg ?? "");
+      const measVals = measurableSkills.map(s => item.scores[s.id] ?? "");
       return [
         i + 1,
         p.jersey_number ?? "",
@@ -83,6 +101,7 @@ export default function Leaderboard() {
         item.overall,
         scoreTier(item.overall)?.label ?? "",
         ...catVals,
+        ...measVals,
         evalCounts[p.id] ?? 0,
       ];
     });
@@ -135,8 +154,15 @@ export default function Leaderboard() {
               <div key={i} className="h-16 rounded-xl bg-secondary animate-pulse" />
             ))}
           {!isLoading && ranked.map((item, i) => {
-            const cat = categories.find(c => c.id === sortBy);
-            const displayScore = sortBy === "overall" ? item.overall : (cat ? calcCategoryAvg(item.scores, cat) ?? 0 : 0);
+            const cat = sortBy === "overall" ? null : categories.find(c => c.id === sortBy) ?? null;
+            const sliderAvg = cat ? calcCategoryAvg(item.scores, cat) : null;
+            // For a measurable-only category (e.g. Running), show the actual
+            // measured values instead of a meaningless 0–10.
+            const showMeasurables = cat !== null && sliderAvg === null;
+            const measurables = showMeasurables ? categoryMeasurables(item.scores, cat) : [];
+            const primId = cat ? primaryMeasurable(cat)?.id : undefined;
+            const primMeas = measurables.find(m => m.id === primId) ?? measurables[0] ?? null;
+            const secondaryMeasurables = measurables.filter(m => m.id !== primMeas?.id);
             return (
               <motion.div key={item.player.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
                 <Link to={`/evaluate/${item.player.id}`} className="flex items-center gap-3 p-3 rounded-xl bg-card card-elevated hover:bg-secondary/50 transition-all">
@@ -149,12 +175,30 @@ export default function Leaderboard() {
                   <div className="flex-1 min-w-0">
                     <span className="text-sm font-semibold text-foreground truncate block">{item.player.first_name} {item.player.last_name}</span>
                     <div className="flex gap-3 mt-0.5">
-                      {item.categoryScores.filter(c => c.avg !== null).slice(0, 3).map(c => (
-                        <span key={c.category} className="text-[10px] text-muted-foreground">{c.category}: <strong>{c.avg}</strong></span>
-                      ))}
+                      {showMeasurables
+                        ? secondaryMeasurables.map(m => (
+                            <span key={m.id} className="text-[10px] text-muted-foreground">{m.label}: <strong>{m.value}{m.unit ? ` ${m.unit}` : ""}</strong></span>
+                          ))
+                        : item.categoryScores.filter(c => c.avg !== null).slice(0, 3).map(c => (
+                            <span key={c.category} className="text-[10px] text-muted-foreground">{c.category}: <strong>{c.avg}</strong></span>
+                          ))}
                     </div>
                   </div>
-                  <OverallScore value={displayScore} showTier className={`text-lg font-bold ${i === 0 ? "text-primary" : "text-foreground"}`} />
+                  {showMeasurables ? (
+                    primMeas ? (
+                      <div className="text-right flex-shrink-0">
+                        <div className={`text-lg font-bold ${i === 0 ? "text-primary" : "text-foreground"}`}>
+                          {primMeas.value}
+                          {primMeas.unit ? <span className="text-xs font-normal text-muted-foreground"> {primMeas.unit}</span> : null}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">{primMeas.label}</div>
+                      </div>
+                    ) : (
+                      <span className="text-lg font-bold text-muted-foreground flex-shrink-0">—</span>
+                    )
+                  ) : (
+                    <OverallScore value={sortBy === "overall" ? item.overall : (sliderAvg as number)} showTier className={`text-lg font-bold ${i === 0 ? "text-primary" : "text-foreground"}`} />
+                  )}
                 </Link>
               </motion.div>
             );

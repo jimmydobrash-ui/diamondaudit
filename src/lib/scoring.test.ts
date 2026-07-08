@@ -3,11 +3,23 @@ import {
   aggregateScoresByPlayer,
   calcSliderOverall,
   calcCategoryAvg,
+  categoryMeasurables,
+  primaryMeasurable,
   visibleEvalCategories,
   scoresForVisiblePlayer,
   scoreTier,
 } from "./scoring";
 import type { TemplateCategory } from "@/hooks/useEvaluationTemplate";
+
+const running: TemplateCategory = {
+  id: "running",
+  name: "Running",
+  skills: [
+    { id: "lateralSpeed", label: "Lateral Speed", type: "slider" },
+    { id: "homeToFirst", label: "Home to 1st", type: "number", unit: "sec" },
+    { id: "sixtyYard", label: "60-Yard", type: "number", unit: "sec" },
+  ],
+};
 
 const categories: TemplateCategory[] = [
   {
@@ -141,6 +153,41 @@ describe("visibleEvalCategories", () => {
   it("shows all categories when positions are null or undefined", () => {
     expect(visibleEvalCategories(categories, null)).toHaveLength(2);
     expect(visibleEvalCategories(categories, undefined)).toHaveLength(2);
+  });
+});
+
+describe("categoryMeasurables", () => {
+  it("returns the number-type skills the score map has values for, with units", () => {
+    const scores = { lateralSpeed: 7, homeToFirst: 4.3, sixtyYard: 7.8 };
+    expect(categoryMeasurables(scores, running)).toEqual([
+      { id: "homeToFirst", label: "Home to 1st", unit: "sec", value: 4.3 },
+      { id: "sixtyYard", label: "60-Yard", unit: "sec", value: 7.8 },
+    ]);
+  });
+
+  it("omits measurables with no value (and ignores slider skills)", () => {
+    // only home-to-first was measured; lateralSpeed is a slider, sixtyYard absent
+    expect(categoryMeasurables({ lateralSpeed: 7, homeToFirst: 4.5 }, running)).toEqual([
+      { id: "homeToFirst", label: "Home to 1st", unit: "sec", value: 4.5 },
+    ]);
+  });
+
+  it("returns [] for a category with no number skills", () => {
+    expect(categoryMeasurables({ contact: 8, exitVelo: 90 }, categories[1])).toEqual([]);
+  });
+});
+
+describe("primaryMeasurable", () => {
+  it("picks the first number skill; times (sec) are lower-is-better", () => {
+    expect(primaryMeasurable(running)).toEqual({ id: "homeToFirst", unit: "sec", lowerIsBetter: true });
+  });
+
+  it("non-time measurables (e.g. mph) are higher-is-better", () => {
+    expect(primaryMeasurable(categories[0])).toEqual({ id: "exitVelo", unit: "mph", lowerIsBetter: false });
+  });
+
+  it("returns null for a slider-only category", () => {
+    expect(primaryMeasurable(categories[1])).toBeNull();
   });
 });
 
