@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>For clubs — DiamondAudit</title>
+    <meta
+      name="description"
+      content="One club license, unlimited tryouts all year — every coach and every athlete on one evaluation standard. Built for clubs and organizations running baseball and softball tryouts year-round."
+    />
+
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="For clubs — DiamondAudit" />
+    <meta property="og:description" content="One club license, unlimited tryouts all year. $1,000 / club / year." />
+    <meta property="og:image" content="https://diamondaudit.io/screenshots/app-dashboard.webp" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0b0e13;
+        --bg-soft: #11151c;
+        --surface: #151a22;
+        --border: #232a34;
+        --text: #e8eaed;
+        --muted: #98a2b0;
+        --faint: #6b7482;
+        --accent: #ef4444;
+        --accent-strong: #dc2626;
+        --accent-soft: rgba(239, 68, 68, 0.12);
+        --radius: 14px;
+        --maxw: 1080px;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html { scroll-behavior: smooth; }
+      body {
+        background: var(--bg); color: var(--text);
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        line-height: 1.6; -webkit-font-smoothing: antialiased;
+      }
+      h1, h2, h3 { font-family: "Space Grotesk", "Inter", sans-serif; line-height: 1.1; letter-spacing: -0.02em; }
+      a { color: inherit; text-decoration: none; }
+      .container { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+      .accent { color: var(--accent); }
+
+      .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; font-size: 15px; border-radius: 10px; padding: 12px 20px; transition: all 0.15s ease; cursor: pointer; border: 1px solid transparent; }
+      .btn-primary { background: var(--accent); color: #fff; }
+      .btn-primary:hover { background: var(--accent-strong); transform: translateY(-1px); }
+      .btn-ghost { color: var(--text); border-color: var(--border); background: transparent; }
+      .btn-ghost:hover { border-color: var(--muted); }
+      .btn-text { color: var(--muted); font-weight: 500; }
+      .btn-text:hover { color: var(--text); }
+      a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+      header { position: sticky; top: 0; z-index: 50; background: rgba(11, 14, 19, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+      .nav { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+      .brand { display: flex; align-items: center; gap: 10px; font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 18px; }
+      .brand img { height: 30px; width: auto; }
+      .nav-right { display: flex; align-items: center; gap: 18px; }
+
+      /* Hero */
+      .hero { padding: 76px 0 60px; text-align: center; border-bottom: 1px solid var(--border); }
+      .eyebrow { display: inline-block; font-size: 13px; font-weight: 600; color: var(--accent); background: var(--accent-soft); padding: 5px 12px; border-radius: 999px; margin-bottom: 20px; }
+      .hero h1 { font-size: 46px; font-weight: 700; margin-bottom: 16px; max-width: 760px; margin-left: auto; margin-right: auto; }
+      .hero p { font-size: 18.5px; color: var(--muted); max-width: 600px; margin: 0 auto 30px; }
+      .hero-cta { display: flex; gap: 13px; justify-content: center; flex-wrap: wrap; }
+      .hero-price { margin-top: 22px; font-size: 14px; color: var(--faint); }
+      .hero-price b { color: var(--text); font-weight: 600; }
+
+      /* Value grid */
+      .sec { padding: 80px 0; }
+      .sec-head { max-width: 640px; margin: 0 auto 46px; text-align: center; }
+      .sec-head h2 { font-size: 32px; font-weight: 700; margin-bottom: 14px; }
+      .sec-head p { color: var(--muted); font-size: 17px; }
+      .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+      .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 26px; }
+      .card .dot { width: 9px; height: 9px; border-radius: 999px; background: var(--accent); display: inline-block; margin-bottom: 15px; }
+      .card h3 { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+      .card p { color: var(--muted); font-size: 14.5px; }
+
+      /* ROI band */
+      .roi { background: var(--bg-soft); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 60px 0; text-align: center; }
+      .roi .container { max-width: 760px; }
+      .roi .price { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 52px; letter-spacing: -0.03em; }
+      .roi .price span { font-size: 18px; color: var(--muted); font-weight: 500; letter-spacing: 0; }
+      .roi h2 { font-size: 26px; margin: 14px 0 12px; }
+      .roi p { color: var(--muted); font-size: 17px; }
+      .roi .chips { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 10px 12px; margin-top: 24px; }
+      .roi .chip { background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 8px 15px; font-size: 14px; color: var(--muted); }
+      .roi .chip b { color: var(--text); font-weight: 600; }
+
+      /* Founder note */
+      .founder { max-width: 720px; margin: 0 auto; text-align: center; }
+      .founder .mark { font-family: "Space Grotesk", sans-serif; font-size: 50px; line-height: 0.5; color: var(--accent); opacity: 0.5; }
+      .founder blockquote { font-family: "Space Grotesk", sans-serif; font-weight: 500; font-size: 25px; line-height: 1.35; margin: 20px 0 20px; text-wrap: balance; }
+      .founder .attr { color: var(--muted); font-size: 15px; }
+      .founder .attr b { color: var(--text); font-weight: 600; }
+
+      /* Closing */
+      .closing { text-align: center; }
+      .closing h2 { font-size: 34px; margin-bottom: 14px; }
+      .closing p { color: var(--muted); font-size: 17px; margin-bottom: 26px; }
+      .closing .hero-cta { justify-content: center; }
+      .closing .note { font-size: 13px; color: var(--faint); margin-top: 18px; }
+
+      footer { border-top: 1px solid var(--border); padding: 30px 0; }
+      .foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+      .foot .brand-sm { font-family: "Space Grotesk", sans-serif; font-weight: 600; }
+      .foot-links { display: flex; gap: 20px; font-size: 14px; color: var(--muted); }
+      .foot-links a:hover { color: var(--text); }
+
+      @media (max-width: 860px) {
+        .hero h1 { font-size: 34px; }
+        .grid { grid-template-columns: 1fr; }
+        .nav-right .btn-text { display: none; }
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <div class="container nav">
+        <a class="brand" href="/">
+          <img src="/logo-256.png" alt="DiamondAudit" />
+          <span>DiamondAudit</span>
+        </a>
+        <div class="nav-right">
+          <a class="btn-text" href="/tour.html">Product tour</a>
+          <a class="btn-text" href="/pricing.html">Pricing</a>
+          <a class="btn-text" href="https://app.diamondaudit.io/auth">Sign in</a>
+          <a class="btn btn-primary" href="https://app.diamondaudit.io/auth">Request access →</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="container">
+        <span class="eyebrow">For clubs &amp; organizations</span>
+        <h1>One standard for every tryout your club runs.</h1>
+        <p>The club license puts your whole organization — every coach, every team, every athlete — on one evaluation standard, all year, for one flat price.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="https://app.diamondaudit.io/auth">Book a walkthrough</a>
+          <a class="btn btn-ghost" href="/pricing.html">See pricing</a>
+        </div>
+        <p class="hero-price"><b>$1,000 / club / year</b> · unlimited tryouts, players, and evaluators</p>
+      </div>
+    </section>
+
+    <!-- WHY A CLUB LICENSE -->
+    <section class="sec">
+      <div class="container">
+        <div class="sec-head">
+          <h2>Built for how a club actually runs.</h2>
+          <p>Multiple teams, multiple age groups, a rotating staff of coaches — and tryouts that don't stop after one weekend.</p>
+        </div>
+        <div class="grid">
+          <div class="card">
+            <span class="dot"></span>
+            <h3>One standard, every team</h3>
+            <p>Every coach across every age group scores on the same calibrated rubric — so a 7 at 10U means what a 7 at 14U means.</p>
+          </div>
+          <div class="card">
+            <span class="dot"></span>
+            <h3>Unlimited tryouts, all year</h3>
+            <p>Fall tryouts, winter camps, mid-season looks, spring combines — run as many as you want on one license.</p>
+          </div>
+          <div class="card">
+            <span class="dot"></span>
+            <h3>Unlimited players &amp; evaluators</h3>
+            <p>Bring your whole staff and your whole roster. No per-seat fees, no per-player math to track.</p>
+          </div>
+          <div class="card">
+            <span class="dot"></span>
+            <h3>Your whole staff, one board</h3>
+            <p>Independent scores from every coach roll into one ranked leaderboard — filter by age, sort by skill, export it all.</p>
+          </div>
+          <div class="card">
+            <span class="dot"></span>
+            <h3>A record that stays with the club</h3>
+            <p>Every evaluation is saved and exportable, year over year — an institutional record behind every roster decision.</p>
+          </div>
+          <div class="card">
+            <span class="dot"></span>
+            <h3>One flat price</h3>
+            <p>$1,000 for the year. No surprises when your numbers grow — budget it once and run.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ROI BAND -->
+    <section class="roi">
+      <div class="container">
+        <div class="price">$1,000<span> / club / year</span></div>
+        <h2>It pays for itself in a weekend.</h2>
+        <p>At $5 per player, the license breaks even at <strong class="accent">200 players</strong> — most clubs clear that in a single tryout, before the season's camps and combines even start.</p>
+        <div class="chips">
+          <span class="chip"><b>200 players</b> × $5 = $1,000 per tryout</span>
+          <span class="chip"><b>One license</b> = every tryout, all year</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOUNDER NOTE (real). A customer testimonial slot is ready below — see comment. -->
+    <section class="sec">
+      <div class="container">
+        <div class="founder">
+          <div class="mark">“</div>
+          <blockquote>We built DiamondAudit to run our own club's tryouts — because defending cuts with a stack of clipboards wasn't working. It's the tool we wished we had.</blockquote>
+          <div class="attr">— <b>The DiamondAudit team</b>, coaches first</div>
+        </div>
+      </div>
+    </section>
+
+    <!--
+      TESTIMONIAL SLOT — ready to activate once a real quote comes in from an
+      evaluator running the current tryouts. Replace the bracketed text with the
+      real quote + name/club, then move this block above the founder note (or
+      swap it in) and delete this comment.
+
+    <section class="sec" style="border-top:1px solid var(--border);">
+      <div class="container">
+        <div class="founder">
+          <div class="mark">“</div>
+          <blockquote>[Real one-line quote from an evaluator — the time saved, or finally trusting the cuts.]</blockquote>
+          <div class="attr">— <b>[Coach name]</b>, [Club name]</div>
+        </div>
+      </div>
+    </section>
+    -->
+
+    <!-- CLOSING -->
+    <section class="sec closing" style="border-top:1px solid var(--border);">
+      <div class="container">
+        <h2>Bring DiamondAudit to your club.</h2>
+        <p>Tell us how your organization runs tryouts and we'll get your license set up.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="https://app.diamondaudit.io/auth">Book a walkthrough</a>
+          <a class="btn btn-ghost" href="/pricing.html">See pricing</a>
+        </div>
+        <p class="note">DiamondAudit is invite-only while we onboard programs one at a time.</p>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+      <div class="container foot">
+        <span class="brand-sm">DiamondAudit</span>
+        <div class="foot-links">
+          <span>© DoDiDe LLC</span>
+          <a href="/">Home</a>
+          <a href="/tour.html">Product tour</a>
+          <a href="/pricing.html">Pricing</a>
+          <a href="/privacy.html">Privacy</a>
+          <a href="/terms.html">Terms</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
