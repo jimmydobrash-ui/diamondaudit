@@ -11,13 +11,21 @@ import {
   calcSliderOverall,
   calcCategoryAvg,
   categoryMeasurables,
+  measurableStanding,
   visibleEvalCategories,
   scoreTier,
   type ScoreTier,
+  type MeasurableStanding,
 } from "@/lib/scoring";
 import { ArrowLeft, Printer } from "lucide-react";
 
 type Scores = Record<string, number>;
+
+const ordinal = (n: number): string => {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
+};
 
 // Same semantic language as the evaluate-screen ScoringRuler, so a tier reads
 // the same color everywhere in the app. Keyed on the tier label rather than
@@ -64,13 +72,40 @@ export default function PlayerReport() {
     [evaluations, playerId],
   );
 
-  // Same cross-coach roll-up used everywhere else (leaderboard, player detail),
-  // so this report's numbers always match what coaches see in the app.
+  // Aggregate EVERY player once (cross-coach roll-up), so we can both read this
+  // player's numbers and build the peer distribution for percentiles. Same
+  // roll-up used everywhere else, so the report always matches the app.
+  const allAggregates = useMemo(
+    () => aggregateScoresByPlayer(
+      evaluations.map(e => ({ player_id: e.player_id, scores: e.scores as Scores })),
+    ),
+    [evaluations],
+  );
+
+  // For each skill id, the aggregated values of every player in THIS player's
+  // age group who was measured on it — the peer set for percentile/rank.
+  const ageGroupPeerValues = useMemo(() => {
+    if (!player) return {} as Record<string, number[]>;
+    const group = playerAgeGroup(player);
+    const peers = players.filter(p => playerAgeGroup(p) === group);
+    const bySkill: Record<string, number[]> = {};
+    for (const p of peers) {
+      const scores = allAggregates[p.id];
+      if (!scores) continue;
+      for (const [skill, value] of Object.entries(scores)) {
+        if (value == null) continue;
+        (bySkill[skill] ??= []).push(value);
+      }
+    }
+    return bySkill;
+  }, [player, players, allAggregates]);
+
   const report = useMemo(() => {
-    const agg: Scores = aggregateScoresByPlayer(
-      playerEvals.map(e => ({ player_id: e.player_id, scores: e.scores as Scores })),
-    )[playerId ?? ""] ?? {};
+    const agg: Scores = allAggregates[playerId ?? ""] ?? {};
     const overall = calcSliderOverall(agg, categories);
+    const skillById = new Map(
+      categories.flatMap(c => c.skills.map(s => [s.id, s] as const)),
+    );
     return {
       overall,
       overallTier: scoreTier(overall),
@@ -88,13 +123,23 @@ export default function PlayerReport() {
             hasSliderSkills,
             avg,
             tier: avg !== null ? scoreTier(avg) : null,
-            measurables: categoryMeasurables(agg, cat),
+            measurables: categoryMeasurables(agg, cat).map(m => {
+              // Times (unit "sec") are lower-is-better; velocities higher.
+              const lowerIsBetter = (skillById.get(m.id)?.unit ?? "") === "sec";
+              const standing = measurableStanding(
+                m.value,
+                ageGroupPeerValues[m.id] ?? [],
+                lowerIsBetter,
+              );
+              return { ...m, standing };
+            }),
           };
         })
         .filter(c => c.avg !== null || c.measurables.length > 0),
     };
-  }, [playerEvals, playerId, categories, visibleCategories]);
+  }, [allAggregates, ageGroupPeerValues, playerId, categories, visibleCategories]);
 
+  const hasStandings = report.categories.some(c => c.measurables.some(m => m.standing));
   const isLoading = playersLoading || evalsLoading;
   const today = new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
 
@@ -189,13 +234,27 @@ export default function PlayerReport() {
                       {cat.hasSliderSkills && <TierBadge tier={cat.tier} />}
                     </div>
                     {cat.measurables.length > 0 && (
-                      <div className={`flex flex-wrap gap-2 pt-2.5 ${cat.hasSliderSkills ? "mt-2.5 border-t border-border/60" : ""}`}>
+                      <div className={`grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2.5 ${cat.hasSliderSkills ? "mt-2.5 border-t border-border/60" : ""}`}>
                         {cat.measurables.map(m => (
-                          <div key={m.id} className="bg-secondary/60 rounded-lg px-3 py-1.5 min-w-[92px]">
-                            <div className="text-sm font-bold text-foreground tabular-nums">
+                          <div key={m.id} className="bg-secondary/60 rounded-lg px-3 py-2">
+                            <div className="text-[10px] text-muted-foreground truncate">{m.label}</div>
+                            <div className="text-base font-bold text-foreground tabular-nums leading-tight">
                               {m.value} <span className="text-[10px] font-normal text-muted-foreground">{m.unit}</span>
                             </div>
-                            <div className="text-[10px] text-muted-foreground truncate">{m.label}</div>
+                            {m.standing && (
+                              <div className="mt-1.5">
+                                <div className="h-1 rounded-full bg-border/70 overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full bg-primary"
+                                    style={{ width: `${m.standing.percentile}%` }}
+                                  />
+                                </div>
+                                <div className="text-[10px] text-muted-foreground mt-1 tabular-nums">
+                                  <span className="font-semibold text-foreground">{ordinal(m.standing.rank)}</span> of {m.standing.total}
+                                  {" · "}{ordinal(m.standing.percentile)} pct
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -208,6 +267,12 @@ export default function PlayerReport() {
 
           {/* Footer */}
           <div className="text-center pt-2 pb-6 space-y-0.5 print:pt-8">
+            {hasStandings && (
+              <p className="text-[11px] text-muted-foreground mb-2 max-w-md mx-auto">
+                Rank and percentile compare {player.first_name} against the {playerAgeGroup(player)} athletes
+                measured on each drill at this tryout.
+              </p>
+            )}
             <p className="text-[11px] text-muted-foreground">Report generated {today}</p>
             <p className="text-[11px] text-muted-foreground">DiamondAudit · diamondaudit.io</p>
           </div>
