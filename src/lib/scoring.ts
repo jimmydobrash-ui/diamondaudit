@@ -104,6 +104,41 @@ export function calcCategoryAvg(scores: Scores, category: TemplateCategory): num
   return round1(vals.reduce((a, b) => a + b, 0) / vals.length);
 }
 
+export interface CategoryMeasurable {
+  id: string;
+  label: string;
+  unit: string;
+  value: number;
+}
+
+/**
+ * The measurable (number-type) skills in a category that this score map has a
+ * value for — e.g. home-to-first time, exit velo. These are deliberately left
+ * out of the 0–10 overall (they'd distort the scale), but coaches still need to
+ * see and rank by them, so the leaderboard surfaces them directly.
+ */
+export function categoryMeasurables(scores: Scores, category: TemplateCategory): CategoryMeasurable[] {
+  return category.skills
+    .filter(s => s.type === "number")
+    .map(s => ({ id: s.id, label: s.label, unit: s.unit ?? "", value: scores[s.id] }))
+    .filter((m): m is CategoryMeasurable => m.value !== undefined && m.value !== null);
+}
+
+/**
+ * A category's primary measurable — its first number-type skill — used to rank a
+ * category that has no meaningful slider score (e.g. Running, scored purely on
+ * home-to-first time). `lowerIsBetter` is true for times (unit "sec"), false
+ * otherwise (e.g. velocity in mph), so the leaderboard sorts the fastest first.
+ */
+export function primaryMeasurable(
+  category: TemplateCategory,
+): { id: string; unit: string; lowerIsBetter: boolean } | null {
+  const s = category.skills.find(sk => sk.type === "number");
+  if (!s) return null;
+  const unit = s.unit ?? "";
+  return { id: s.id, unit, lowerIsBetter: unit === "sec" };
+}
+
 /**
  * The evaluation categories visible for a player given their positions.
  * The "catching" category is hidden for players whose positions are set and do
