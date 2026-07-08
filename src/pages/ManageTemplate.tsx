@@ -7,13 +7,40 @@ import { useEvaluationTemplate, useSaveTemplate, TemplateCategory, TemplateSkill
 import { useAuth } from "@/hooks/useAuth";
 import { useOrgMembers } from "@/hooks/useOrgMembers";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Plus, Trash2, GripVertical, Save, Check, SlidersHorizontal, Hash, UserPlus, AlertTriangle, Users } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, Save, Check, SlidersHorizontal, Hash, UserPlus, AlertTriangle, Users } from "lucide-react";
 import { toast } from "sonner";
 
-function SkillRow({ skill, onUpdate, onRemove }: { skill: TemplateSkill; onUpdate: (s: TemplateSkill) => void; onRemove: () => void }) {
+function SkillRow({ skill, onUpdate, onRemove, onMove, isFirst, isLast }: {
+  skill: TemplateSkill;
+  onUpdate: (s: TemplateSkill) => void;
+  onRemove: () => void;
+  onMove: (dir: -1 | 1) => void;
+  isFirst: boolean;
+  isLast: boolean;
+}) {
   return (
     <div className="flex items-center gap-2 py-1.5 group">
-      <GripVertical className="w-4 h-4 text-muted-foreground/40 flex-shrink-0" />
+      {/* Order matters: the first skill is what the leaderboard ranks a
+          measurable-only category by, so give real reorder controls (the old
+          grip icon suggested drag-and-drop that never existed). */}
+      <div className="flex flex-col flex-shrink-0">
+        <button
+          onClick={() => onMove(-1)}
+          disabled={isFirst}
+          aria-label={`Move ${skill.label || "skill"} up`}
+          className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-20 disabled:pointer-events-none transition-colors"
+        >
+          <ChevronUp className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={() => onMove(1)}
+          disabled={isLast}
+          aria-label={`Move ${skill.label || "skill"} down`}
+          className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-20 disabled:pointer-events-none transition-colors"
+        >
+          <ChevronDown className="w-3.5 h-3.5" />
+        </button>
+      </div>
       <input
         value={skill.label}
         onChange={e => onUpdate({ ...skill, label: e.target.value, id: skill.id })}
@@ -55,6 +82,14 @@ function CategoryEditor({ category, onChange, onRemove }: { category: TemplateCa
     onChange({ ...category, skills: category.skills.filter((_, i) => i !== index) });
   };
 
+  const moveSkill = (index: number, dir: -1 | 1) => {
+    const target = index + dir;
+    if (target < 0 || target >= category.skills.length) return;
+    const skills = [...category.skills];
+    [skills[index], skills[target]] = [skills[target], skills[index]];
+    onChange({ ...category, skills });
+  };
+
   const addSkill = () => {
     const id = `skill_${Date.now()}`;
     onChange({ ...category, skills: [...category.skills, { id, label: "", type: "slider" }] });
@@ -75,7 +110,15 @@ function CategoryEditor({ category, onChange, onRemove }: { category: TemplateCa
       </div>
       <div className="space-y-0.5">
         {category.skills.map((skill, i) => (
-          <SkillRow key={skill.id} skill={skill} onUpdate={s => updateSkill(i, s)} onRemove={() => removeSkill(i)} />
+          <SkillRow
+            key={skill.id}
+            skill={skill}
+            onUpdate={s => updateSkill(i, s)}
+            onRemove={() => removeSkill(i)}
+            onMove={dir => moveSkill(i, dir)}
+            isFirst={i === 0}
+            isLast={i === category.skills.length - 1}
+          />
         ))}
       </div>
       <button onClick={addSkill} className="flex items-center gap-1.5 text-xs text-primary font-medium hover:text-primary/80 transition-colors pt-1">
