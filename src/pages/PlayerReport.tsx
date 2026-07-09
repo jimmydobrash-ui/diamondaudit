@@ -4,54 +4,13 @@ import { motion } from "framer-motion";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useEvaluations } from "@/hooks/useEvaluations";
 import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
-import ScoreRing from "@/components/ScoreRing";
+import ReportCardDocument from "@/components/ReportCardDocument";
 import { playerAgeGroup } from "@/lib/mock-data";
-import {
-  aggregateScoresByPlayer,
-  calcSliderOverall,
-  calcCategoryAvg,
-  categoryMeasurables,
-  measurableStanding,
-  visibleEvalCategories,
-  scoreTier,
-  type ScoreTier,
-  type MeasurableStanding,
-} from "@/lib/scoring";
+import { aggregateScoresByPlayer, visibleEvalCategories } from "@/lib/scoring";
+import { buildPlayerReport, peerValuesForGroup } from "@/lib/reportCard";
 import { ArrowLeft, Printer } from "lucide-react";
 
 type Scores = Record<string, number>;
-
-const ordinal = (n: number): string => {
-  const s = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
-};
-
-// Same semantic language as the evaluate-screen ScoringRuler, so a tier reads
-// the same color everywhere in the app. Keyed on the tier label rather than
-// the numeric threshold so it stays correct if SCORE_TIERS is ever reordered.
-const TIER_STYLE: Record<string, { badge: string; ring: string }> = {
-  "Unicorn": { badge: "bg-primary/10 text-primary", ring: "text-primary" },
-  "Elite": { badge: "bg-primary/10 text-primary", ring: "text-primary" },
-  "Above Average": { badge: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400", ring: "text-emerald-500" },
-  "Average": { badge: "bg-blue-500/10 text-blue-700 dark:text-blue-400", ring: "text-blue-500" },
-  "Below Average": { badge: "bg-amber-500/10 text-amber-700 dark:text-amber-400", ring: "text-amber-500" },
-  "Needs significant work": { badge: "bg-muted text-muted-foreground", ring: "text-muted-foreground" },
-};
-const FALLBACK_TIER_STYLE = { badge: "bg-secondary text-muted-foreground", ring: "text-muted-foreground" };
-
-function TierBadge({ tier, size = "md" }: { tier: ScoreTier | null; size?: "sm" | "md" | "lg" }) {
-  if (!tier) {
-    return <span className="text-xs text-muted-foreground">Not yet evaluated</span>;
-  }
-  const style = TIER_STYLE[tier.label] ?? FALLBACK_TIER_STYLE;
-  const sizeClass = size === "lg" ? "text-base px-3.5 py-1.5" : size === "sm" ? "text-[11px] px-2 py-0.5" : "text-xs px-2.5 py-1";
-  return (
-    <span className={`inline-flex items-center rounded-full font-semibold whitespace-nowrap ${style.badge} ${sizeClass}`}>
-      {tier.label} ({tier.league})
-    </span>
-  );
-}
 
 export default function PlayerReport() {
   const { playerId } = useParams<{ playerId: string }>();
@@ -67,79 +26,25 @@ export default function PlayerReport() {
     [categories, player?.positions],
   );
 
-  const playerEvals = useMemo(
-    () => evaluations.filter(e => e.player_id === playerId),
+  const evalCount = useMemo(
+    () => evaluations.filter(e => e.player_id === playerId).length,
     [evaluations, playerId],
   );
 
-  // Aggregate EVERY player once (cross-coach roll-up), so we can both read this
-  // player's numbers and build the peer distribution for percentiles. Same
-  // roll-up used everywhere else, so the report always matches the app.
+  // Aggregate every player once (cross-coach roll-up) so this player's numbers
+  // and the age-group peer distribution for percentiles both come from the same
+  // source the rest of the app uses.
   const allAggregates = useMemo(
-    () => aggregateScoresByPlayer(
-      evaluations.map(e => ({ player_id: e.player_id, scores: e.scores as Scores })),
-    ),
+    () => aggregateScoresByPlayer(evaluations.map(e => ({ player_id: e.player_id, scores: e.scores as Scores }))),
     [evaluations],
   );
 
-  // For each skill id, the aggregated values of every player in THIS player's
-  // age group who was measured on it — the peer set for percentile/rank.
-  const ageGroupPeerValues = useMemo(() => {
-    if (!player) return {} as Record<string, number[]>;
-    const group = playerAgeGroup(player);
-    const peers = players.filter(p => playerAgeGroup(p) === group);
-    const bySkill: Record<string, number[]> = {};
-    for (const p of peers) {
-      const scores = allAggregates[p.id];
-      if (!scores) continue;
-      for (const [skill, value] of Object.entries(scores)) {
-        if (value == null) continue;
-        (bySkill[skill] ??= []).push(value);
-      }
-    }
-    return bySkill;
-  }, [player, players, allAggregates]);
-
   const report = useMemo(() => {
-    const agg: Scores = allAggregates[playerId ?? ""] ?? {};
-    const overall = calcSliderOverall(agg, categories);
-    const skillById = new Map(
-      categories.flatMap(c => c.skills.map(s => [s.id, s] as const)),
-    );
-    return {
-      overall,
-      overallTier: scoreTier(overall),
-      categories: visibleCategories
-        .map(cat => {
-          // A category made up entirely of number-type skills (e.g. Running,
-          // scored purely on sprint times) has no slider average and therefore
-          // no tier — calcCategoryAvg only averages slider skills. Track that
-          // so the UI shows raw measurables without a misleading "not yet
-          // evaluated" tier badge next to real data.
-          const hasSliderSkills = cat.skills.some(s => s.type === "slider");
-          const avg = hasSliderSkills ? calcCategoryAvg(agg, cat) : null;
-          return {
-            name: cat.name,
-            hasSliderSkills,
-            avg,
-            tier: avg !== null ? scoreTier(avg) : null,
-            measurables: categoryMeasurables(agg, cat).map(m => {
-              // Times (unit "sec") are lower-is-better; velocities higher.
-              const lowerIsBetter = (skillById.get(m.id)?.unit ?? "") === "sec";
-              const standing = measurableStanding(
-                m.value,
-                ageGroupPeerValues[m.id] ?? [],
-                lowerIsBetter,
-              );
-              return { ...m, standing };
-            }),
-          };
-        })
-        .filter(c => c.avg !== null || c.measurables.length > 0),
-    };
-  }, [allAggregates, ageGroupPeerValues, playerId, categories, visibleCategories]);
+    if (!player) return null;
+    const peers = peerValuesForGroup(playerAgeGroup(player), players, allAggregates);
+    return buildPlayerReport(allAggregates[player.id] ?? {}, peers, categories, visibleCategories);
+  }, [player, players, allAggregates, categories, visibleCategories]);
 
-  const hasStandings = report.categories.some(c => c.measurables.some(m => m.standing));
   const isLoading = playersLoading || evalsLoading;
   const today = new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
 
@@ -151,15 +56,13 @@ export default function PlayerReport() {
     );
   }
 
-  if (!player) {
+  if (!player || !report) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground text-sm">
         Player not found
       </div>
     );
   }
-
-  const overallStyle = report.overallTier ? (TIER_STYLE[report.overallTier.label] ?? FALLBACK_TIER_STYLE) : FALLBACK_TIER_STYLE;
 
   return (
     <div className="min-h-screen bg-background">
@@ -183,99 +86,8 @@ export default function PlayerReport() {
       </header>
 
       <main className="container max-w-2xl py-8 print:py-0 print:max-w-none">
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-          {/* Masthead */}
-          <div className="text-center space-y-1 print:pt-6">
-            <img src="/logo-256.png" alt="DiamondAudit" className="h-10 w-auto mx-auto mb-2" />
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Tryout Evaluation Report
-            </p>
-          </div>
-
-          {/* Player identity */}
-          <div className="text-center space-y-1.5">
-            <h1 className="text-2xl font-bold text-foreground">{player.first_name} {player.last_name}</h1>
-            <p className="text-sm text-muted-foreground">
-              {player.jersey_number != null && <>#{player.jersey_number} · </>}
-              {playerAgeGroup(player)}
-              {player.positions.length > 0 && <> · {player.positions.join(", ")}</>}
-              {" "}· B:{player.bats} T:{player.throws}
-            </p>
-          </div>
-
-          {playerEvals.length === 0 ? (
-            <div className="bg-card rounded-2xl p-8 card-elevated text-center text-sm text-muted-foreground">
-              Not evaluated yet.
-            </div>
-          ) : (
-            <>
-              {/* Headline overall */}
-              <div className="bg-card rounded-2xl p-8 card-elevated flex flex-col items-center gap-3 print:shadow-none print:border">
-                <ScoreRing value={report.overall} colorClassName={overallStyle.ring}>
-                  <div className="text-center leading-tight">
-                    <div className="text-2xl font-bold text-foreground tabular-nums">{report.overall}</div>
-                    <div className="text-[10px] text-muted-foreground">/ 10</div>
-                  </div>
-                </ScoreRing>
-                <TierBadge tier={report.overallTier} size="lg" />
-                <p className="text-xs text-muted-foreground">
-                  Overall evaluation · {playerEvals.length} {playerEvals.length === 1 ? "coach" : "coaches"}
-                </p>
-              </div>
-
-              {/* Category breakdown */}
-              <div className="space-y-3">
-                {report.categories.map(cat => (
-                  <div key={cat.name} className="bg-card rounded-xl p-4 card-elevated print:shadow-none print:border">
-                    <div className="flex items-center justify-between gap-3 mb-1">
-                      <h2 className="text-sm font-semibold text-foreground">{cat.name}</h2>
-                      {/* Measurable-only categories (e.g. Running, scored purely
-                          on sprint times) have no slider tier to show. */}
-                      {cat.hasSliderSkills && <TierBadge tier={cat.tier} />}
-                    </div>
-                    {cat.measurables.length > 0 && (
-                      <div className={`grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2.5 ${cat.hasSliderSkills ? "mt-2.5 border-t border-border/60" : ""}`}>
-                        {cat.measurables.map(m => (
-                          <div key={m.id} className="bg-secondary/60 rounded-lg px-3 py-2">
-                            <div className="text-[10px] text-muted-foreground truncate">{m.label}</div>
-                            <div className="text-base font-bold text-foreground tabular-nums leading-tight">
-                              {m.value} <span className="text-[10px] font-normal text-muted-foreground">{m.unit}</span>
-                            </div>
-                            {m.standing && (
-                              <div className="mt-1.5">
-                                <div className="h-1 rounded-full bg-border/70 overflow-hidden">
-                                  <div
-                                    className="h-full rounded-full bg-primary"
-                                    style={{ width: `${m.standing.percentile}%` }}
-                                  />
-                                </div>
-                                <div className="text-[10px] text-muted-foreground mt-1 tabular-nums">
-                                  <span className="font-semibold text-foreground">{ordinal(m.standing.rank)}</span> of {m.standing.total}
-                                  {" · "}{ordinal(m.standing.percentile)} pct
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* Footer */}
-          <div className="text-center pt-2 pb-6 space-y-0.5 print:pt-8">
-            {hasStandings && (
-              <p className="text-[11px] text-muted-foreground mb-2 max-w-md mx-auto">
-                Rank and percentile compare {player.first_name} against the {playerAgeGroup(player)} athletes
-                measured on each drill at this tryout.
-              </p>
-            )}
-            <p className="text-[11px] text-muted-foreground">Report generated {today}</p>
-            <p className="text-[11px] text-muted-foreground">DiamondAudit · diamondaudit.io</p>
-          </div>
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+          <ReportCardDocument player={player} report={report} evalCount={evalCount} today={today} />
         </motion.div>
       </main>
     </div>

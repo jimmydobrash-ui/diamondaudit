@@ -9,7 +9,7 @@ import { playerAgeGroup, sortAgeGroups } from "@/lib/mock-data";
 import { calcSliderOverall, aggregateScoresByPlayer } from "@/lib/scoring";
 import { useAuth } from "@/hooks/useAuth";
 import OverallScore from "@/components/OverallScore";
-import { Search, Plus, Upload, ChevronRight } from "lucide-react";
+import { Search, Plus, Upload, ChevronRight, FileText } from "lucide-react";
 
 export default function Players() {
   const [search, setSearch] = useState("");
@@ -56,7 +56,10 @@ export default function Players() {
               <p className="text-sm text-muted-foreground mt-1">{players.length} players registered</p>
             </div>
             {role === "admin" && (
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap justify-end">
+                <Link to={`/players/report-cards${ageFilter !== "all" ? `?age=${ageFilter}` : ""}`} className="h-9 px-3 rounded-lg bg-secondary text-foreground text-xs font-medium flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5" /> Report cards
+                </Link>
                 <Link to="/players/import" className="h-9 px-3 rounded-lg bg-secondary text-foreground text-xs font-medium flex items-center gap-1.5">
                   <Upload className="w-3.5 h-3.5" /> Import
                 </Link>
