@@ -5,6 +5,7 @@ import {
   calcCategoryAvg,
   categoryMeasurables,
   primaryMeasurable,
+  measurableStanding,
   visibleEvalCategories,
   scoresForVisiblePlayer,
   scoreTier,
@@ -253,5 +254,50 @@ describe("scoreTier", () => {
   it("exposes a compact league badge for the inline tag", () => {
     expect(scoreTier(5.8)?.badge).toBe("Average (AAA)");
     expect(scoreTier(3.2)?.badge).toBe("Below Avg (AA)");
+  });
+});
+
+describe("measurableStanding", () => {
+  // 12 exit-velo values; the player's own value is included in the array.
+  const velos = [58.8, 57, 51, 43, 55.7, 55.1, 43, 50, 43.5, 43.7, 41.2, 48.2];
+
+  it("ranks the hardest thrower #1 (higher is better)", () => {
+    const s = measurableStanding(58.8, velos, false)!;
+    expect(s.rank).toBe(1);
+    expect(s.total).toBe(12);
+    // beat 11 of 12 -> round(11/12*100) = 92
+    expect(s.percentile).toBe(92);
+  });
+
+  it("ranks the fastest time #1 (lower is better)", () => {
+    const times = [3.5, 3.7, 3.8, 3.9, 4.0, 4.3];
+    const s = measurableStanding(3.5, times, true)!;
+    expect(s.rank).toBe(1);
+    expect(s.total).toBe(6);
+  });
+
+  it("computes a middle rank + percentile", () => {
+    // value 50 in the velo set: better = those > 50 (58.8,57,51,55.7,55.1) = 5 -> rank 6
+    const s = measurableStanding(50, velos, false)!;
+    expect(s.rank).toBe(6);
+    // worse = those < 50 (43,43,43.5,43.7,41.2,48.2) = 6 -> round(6/12*100) = 50
+    expect(s.percentile).toBe(50);
+  });
+
+  it("returns null when the peer group is too small", () => {
+    expect(measurableStanding(50, [50, 48, 45], false)).toBeNull();
+    expect(measurableStanding(50, [50, 48, 45], false, 3)).not.toBeNull();
+  });
+
+  it("gives tied values the same rank", () => {
+    const s = measurableStanding(43, velos, false)!;
+    // two 43s tie; better = values > 43 (58.8,57,51,55.7,55.1,50,43.5,43.7,48.2) = 9 -> rank 10
+    expect(s.rank).toBe(10);
+  });
+
+  it("never reports 0th or 100th percentile", () => {
+    const set = [10, 9, 8, 7, 6];
+    expect(measurableStanding(10, set, false)!.percentile).toBeLessThanOrEqual(99);
+    expect(measurableStanding(6, set, false)!.percentile).toBeGreaterThanOrEqual(1);
   });
 });

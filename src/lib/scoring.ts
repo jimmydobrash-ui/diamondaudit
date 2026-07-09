@@ -139,6 +139,41 @@ export function primaryMeasurable(
   return { id: s.id, unit, lowerIsBetter: unit === "sec" };
 }
 
+export interface MeasurableStanding {
+  /** 1 = best in the peer group (competition ranking; ties share a rank). */
+  rank: number;
+  /** Peers measured on this metric, including the player. */
+  total: number;
+  /** Percentile rank, 1–99: the % of the peer group this player beat. Clamped
+   *  off 0/100 so it never reads "0th"/"100th". Small groups cap it naturally
+   *  (best of 12 ≈ 92nd), which is why we show rank alongside it. */
+  percentile: number;
+}
+
+/**
+ * Where a player's measurable (velo, time…) stands within a peer group,
+ * computed purely from the tryout's own data — no external benchmarks. Returns
+ * null when the group is too small to be meaningful (< `minPeers` measured).
+ *
+ * `lowerIsBetter` is true for times (unit "sec"), false for velocities, so the
+ * fastest time and the hardest throw both rank #1. `peerValues` should include
+ * the player's own value.
+ */
+export function measurableStanding(
+  value: number,
+  peerValues: number[],
+  lowerIsBetter: boolean,
+  minPeers = 4,
+): MeasurableStanding | null {
+  const total = peerValues.length;
+  if (total < minPeers) return null;
+  const better = peerValues.filter(v => (lowerIsBetter ? v < value : v > value)).length;
+  const worse = peerValues.filter(v => (lowerIsBetter ? v > value : v < value)).length;
+  const rank = better + 1;
+  const percentile = Math.min(99, Math.max(1, Math.round((worse / total) * 100)));
+  return { rank, total, percentile };
+}
+
 /**
  * The evaluation categories visible for a player given their positions.
  * The "catching" category is hidden for players whose positions are set and do
