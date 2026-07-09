@@ -34,7 +34,7 @@ const TIER_STYLE: Record<string, { badge: string; ring: string }> = {
   "Unicorn": { badge: "bg-primary/10 text-primary", ring: "text-primary" },
   "Elite": { badge: "bg-primary/10 text-primary", ring: "text-primary" },
   "Above Average": { badge: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400", ring: "text-emerald-500" },
-  "Average": { badge: "bg-secondary text-foreground", ring: "text-muted-foreground" },
+  "Average": { badge: "bg-blue-500/10 text-blue-700 dark:text-blue-400", ring: "text-blue-500" },
   "Below Average": { badge: "bg-amber-500/10 text-amber-700 dark:text-amber-400", ring: "text-amber-500" },
   "Needs significant work": { badge: "bg-muted text-muted-foreground", ring: "text-muted-foreground" },
 };
