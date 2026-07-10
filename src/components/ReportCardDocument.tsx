@@ -104,19 +104,23 @@ export default function ReportCardDocument({
                   {cat.hasSliderSkills && <TierBadge tier={cat.tier} />}
                 </div>
                 {cat.measurables.length > 0 && (
-                  <div className={`grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2.5 ${cat.hasSliderSkills ? "mt-2.5 border-t border-border/60" : ""}`}>
+                  <div className={`grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2.5 ${cat.hasSliderSkills ? "mt-2.5 border-t border-border/60" : ""}`}>
                     {cat.measurables.map(m => (
-                      <div key={m.id} className="bg-secondary/60 rounded-lg px-3 py-2">
-                        <div className="text-[10px] text-muted-foreground truncate">{m.label}</div>
-                        <div className="text-base font-bold text-foreground tabular-nums leading-tight">
-                          {m.value} <span className="text-[10px] font-normal text-muted-foreground">{m.unit}</span>
+                      <div key={m.id} className="bg-secondary/60 rounded-lg px-3.5 py-3">
+                        {/* leading-[15px] gives the 11px label room to breathe —
+                            the previous text-[10px] + truncate combo produced a
+                            line box tighter than the font's ascent, so html2canvas
+                            rasterized it with the tops of the letters sliced off. */}
+                        <div className="text-[11px] font-semibold text-muted-foreground leading-[15px]">{m.label}</div>
+                        <div className="text-lg font-bold text-foreground tabular-nums leading-6 mt-0.5">
+                          {m.value} <span className="text-[11px] font-medium text-muted-foreground">{m.unit}</span>
                         </div>
                         {m.standing && (
-                          <div className="mt-1.5">
-                            <div className="h-1 rounded-full bg-border/70 overflow-hidden">
+                          <div className="mt-2">
+                            <div className="h-1.5 rounded-full bg-border/70 overflow-hidden">
                               <div className="h-full rounded-full bg-primary" style={{ width: `${m.standing.percentile}%` }} />
                             </div>
-                            <div className="text-[10px] text-muted-foreground mt-1 tabular-nums">
+                            <div className="text-[11px] text-muted-foreground mt-1.5 leading-[15px] tabular-nums">
                               <span className="font-semibold text-foreground">{ordinal(m.standing.rank)}</span> of {m.standing.total}
                               {" · "}{ordinal(m.standing.percentile)} pct
                             </div>
