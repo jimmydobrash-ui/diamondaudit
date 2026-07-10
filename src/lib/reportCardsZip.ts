@@ -82,6 +82,13 @@ export function downloadBlob(blob: Blob, filename: string): void {
   a.download = filename;
   document.body.appendChild(a);
   a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  // Keep the object URL alive well past the click. Revoking it synchronously
+  // (as we used to) can truncate a large download that's still streaming to
+  // disk — the browser cancels the read mid-flight and writes a partial file,
+  // which macOS then reports as an "unsupported format" zip. Defer cleanup so
+  // the whole archive lands intact regardless of size.
+  setTimeout(() => {
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, 60_000);
 }
