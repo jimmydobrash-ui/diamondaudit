@@ -126,3 +126,18 @@ export function reportFileName(p: {
   const name = `${p.first_name}-${p.last_name}`.replace(/[^a-zA-Z0-9-]/g, "");
   return `${jersey}${name}.pdf`;
 }
+
+/**
+ * The zip entry path for a bulk export. When `folder` is given (a "download
+ * all age groups" export), the file is nested under an age-group folder —
+ * jersey numbers reset per age group, so two 10U/11U players could otherwise
+ * collide and overwrite each other in a flat zip. A single-group export
+ * (`folder` null) stays flat, unchanged from before this existed.
+ */
+export function bulkReportFileName(
+  p: { first_name: string; last_name: string; jersey_number: number | null },
+  folder: string | null,
+): string {
+  const base = reportFileName(p);
+  return folder ? `${folder}/${base}` : base;
+}

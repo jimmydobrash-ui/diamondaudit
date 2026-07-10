@@ -11,7 +11,7 @@ import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
 import { aggregateScoresByPlayer, visibleEvalCategories } from "@/lib/scoring";
 import { playerAgeGroup, sortAgeGroups } from "@/lib/mock-data";
 import { compareForTryout } from "@/lib/rosterOrder";
-import { buildPlayerReport, peerValuesByGroup, reportFileName } from "@/lib/reportCard";
+import { buildPlayerReport, peerValuesByGroup, bulkReportFileName } from "@/lib/reportCard";
 import { generateReportCardsZip, downloadBlob } from "@/lib/reportCardsZip";
 import { ArrowLeft, Download, FileText } from "lucide-react";
 
@@ -50,34 +50,51 @@ export default function ReportCards() {
     return sortAgeGroups([...set]);
   }, [players, evalCounts]);
 
+  // "all" matches the sentinel Leaderboard already uses for its age filter.
   const paramAge = searchParams.get("age");
-  const [group, setGroup] = useState<string>(() => paramAge && paramAge !== "all" ? paramAge : "");
-  const activeGroup = group && ageGroups.includes(group) ? group : (ageGroups[0] ?? "");
+  const [group, setGroup] = useState<string>(() => (paramAge && paramAge !== "all" ? paramAge : "all"));
+  const activeGroup = group === "all" || ageGroups.includes(group) ? group : "all";
+  const isAllGroups = activeGroup === "all";
 
-  // Evaluated athletes in the active group, in tryout (jersey) order.
+  // Evaluated athletes in scope, in tryout (age group, then jersey) order.
+  // compareForTryout already sorts by age group first, so an "all" export
+  // naturally comes out grouped rather than shuffled.
   const groupPlayers = useMemo(
     () => players
-      .filter(p => playerAgeGroup(p) === activeGroup && (evalCounts[p.id] ?? 0) > 0)
+      .filter(p => (evalCounts[p.id] ?? 0) > 0 && (isAllGroups || playerAgeGroup(p) === activeGroup))
       .sort(compareForTryout),
-    [players, activeGroup, evalCounts],
+    [players, activeGroup, isAllGroups, evalCounts],
   );
 
   const cards = useMemo(
-    () => groupPlayers.map(p => ({
-      player: p,
-      filename: reportFileName(p),
-      evalCount: evalCounts[p.id] ?? 0,
-      report: buildPlayerReport(
-        allAggregates[p.id] ?? {},
-        peerValues[activeGroup] ?? {},
-        categories,
-        visibleEvalCategories(categories, p.positions),
-      ),
-    })),
-    [groupPlayers, allAggregates, peerValues, activeGroup, categories, evalCounts],
+    () => groupPlayers.map(p => {
+      const pGroup = playerAgeGroup(p);
+      return {
+        player: p,
+        // Nest under a per-age-group folder only when spanning multiple
+        // groups — jersey numbers reset per group, so a flat "all" zip could
+        // otherwise let a 10U and 11U player with the same # overwrite each
+        // other. Each player's percentile still compares against their OWN
+        // age group's peers, never mixed across groups.
+        filename: bulkReportFileName(p, isAllGroups ? pGroup : null),
+        evalCount: evalCounts[p.id] ?? 0,
+        report: buildPlayerReport(
+          allAggregates[p.id] ?? {},
+          peerValues[pGroup] ?? {},
+          categories,
+          visibleEvalCategories(categories, p.positions),
+        ),
+      };
+    }),
+    [groupPlayers, allAggregates, peerValues, isAllGroups, categories, evalCounts],
   );
 
   const isLoading = playersLoading || evalsLoading;
+  // ~1.1s/card measured in testing (rasterize + PDF page); rough estimate so
+  // the "keep this screen open" ask doesn't feel like a black box on a big
+  // multi-group export.
+  const estSeconds = Math.ceil(cards.length * 1.1);
+  const estLabel = estSeconds < 60 ? `~${estSeconds}s` : `~${Math.ceil(estSeconds / 60)} min`;
 
   const handleDownload = async () => {
     const container = containerRef.current;
@@ -88,7 +105,7 @@ export default function ReportCards() {
     setProgress({ done: 0, total: items.length });
     try {
       const blob = await generateReportCardsZip(items, (done, total) => setProgress({ done, total }));
-      downloadBlob(blob, `diamondaudit-${activeGroup}-report-cards.zip`);
+      downloadBlob(blob, isAllGroups ? "diamondaudit-all-report-cards.zip" : `diamondaudit-${activeGroup}-report-cards.zip`);
       toast.success(`Downloaded ${items.length} report ${items.length === 1 ? "card" : "cards"}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't generate report cards");
@@ -131,6 +148,14 @@ export default function ReportCards() {
             <div>
               <label className="text-xs font-medium text-muted-foreground block mb-1.5">Age group</label>
               <div className="flex gap-2 overflow-x-auto pb-1">
+                <button
+                  onClick={() => setGroup("all")}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                    isAllGroups ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                  }`}
+                >
+                  All ages
+                </button>
                 {ageGroups.map(ag => (
                   <button
                     key={ag}
@@ -148,7 +173,8 @@ export default function ReportCards() {
             <div className="flex items-center gap-2 text-sm text-foreground">
               <FileText className="w-4 h-4 text-muted-foreground" />
               <span>
-                <strong className="tabular-nums">{cards.length}</strong> {cards.length === 1 ? "athlete" : "athletes"} in {activeGroup} with evaluations
+                <strong className="tabular-nums">{cards.length}</strong> {cards.length === 1 ? "athlete" : "athletes"}{" "}
+                {isAllGroups ? `across ${ageGroups.length} age groups` : `in ${activeGroup}`} with evaluations
               </span>
             </div>
 
@@ -173,9 +199,9 @@ export default function ReportCards() {
             )}
 
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Each athlete gets their own PDF (named by jersey + name), bundled in one zip. Each report shows
-              only that athlete's results — safe to forward to their family. Generating a large group can take
-              up to a minute; keep this screen open.
+              Each athlete gets their own PDF (named by jersey + name{isAllGroups ? ", nested in an age-group folder" : ""}),
+              bundled in one zip. Each report shows only that athlete's results — safe to forward to their family.
+              {cards.length > 20 && ` Estimated time: ${estLabel} — keep this screen open.`}
             </p>
           </div>
         )}
