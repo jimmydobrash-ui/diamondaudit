@@ -5,6 +5,7 @@ import AppLayout from "@/components/AppLayout";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useEvaluations } from "@/hooks/useEvaluations";
 import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
+import { useHasMounted } from "@/hooks/useHasMounted";
 import { playerAgeGroup, sortAgeGroups } from "@/lib/mock-data";
 import { calcSliderOverall, calcCategoryAvg, categoryMeasurables, primaryMeasurable, aggregateScoresByPlayer, scoreTier } from "@/lib/scoring";
 import { toCsv, downloadCsv } from "@/lib/csv";
@@ -14,6 +15,7 @@ import { BarChart3, Trophy, Download } from "lucide-react";
 export default function Leaderboard() {
   const [sortBy, setSortBy] = useState("overall");
   const [ageFilter, setAgeFilter] = useState("all");
+  const hasMounted = useHasMounted();
   const { data: players = [], isLoading: playersLoading } = usePlayers();
   const { data: evaluations = [], isLoading: evalsLoading } = useEvaluations();
   const isLoading = playersLoading || evalsLoading;
@@ -164,7 +166,7 @@ export default function Leaderboard() {
             const primMeas = measurables.find(m => m.id === primId) ?? measurables[0] ?? null;
             const secondaryMeasurables = measurables.filter(m => m.id !== primMeas?.id);
             return (
-              <motion.div key={item.player.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
+              <motion.div key={item.player.id} initial={hasMounted.current ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={hasMounted.current ? undefined : { delay: i * 0.04 }}>
                 <Link to={`/evaluate/${item.player.id}`} className="flex items-center gap-3 p-3 rounded-xl bg-card card-elevated hover:bg-secondary/50 transition-all">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${i === 0 ? "bg-primary/10" : "bg-secondary"}`}>
                     {i === 0 ? <Trophy className="w-4 h-4 text-primary" /> : <span className="text-sm font-bold text-muted-foreground">{i + 1}</span>}

@@ -7,6 +7,7 @@ import { playerAgeGroup } from "@/lib/mock-data";
 import { compareForTryout } from "@/lib/rosterOrder";
 import { ClipboardList, ChevronRight } from "lucide-react";
 import { useMemo } from "react";
+import { useHasMounted } from "@/hooks/useHasMounted";
 import { useMyPlayerGrades, type PlayerGradeValue } from "@/hooks/usePlayerGrades";
 import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
 import GradeBadge from "@/components/GradeBadge";
@@ -14,6 +15,7 @@ import OverallScore from "@/components/OverallScore";
 import { calcSliderOverall, aggregateScoresByPlayer } from "@/lib/scoring";
 
 export default function EvaluateList() {
+  const hasMounted = useHasMounted();
   const { data: players = [], isLoading } = usePlayers();
   const { data: evaluations = [] } = useEvaluations();
   const { data: grades = [] } = useMyPlayerGrades();
@@ -61,7 +63,7 @@ export default function EvaluateList() {
           ) : orderedPlayers.map((player, i) => {
             const score = playerScores[player.id];
             return (
-              <motion.div key={player.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+              <motion.div key={player.id} initial={hasMounted.current ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={hasMounted.current ? undefined : { delay: i * 0.03 }}>
                 <Link to={`/evaluate/${player.id}`} className="w-full flex items-center gap-3 p-3 rounded-xl bg-card card-elevated hover:bg-secondary/50 transition-all group">
                   <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center flex-shrink-0">
                     <span className="text-lg font-bold text-foreground">#{player.jersey_number ?? "?"}</span>

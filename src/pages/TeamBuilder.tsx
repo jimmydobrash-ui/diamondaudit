@@ -9,6 +9,7 @@ import { useEvaluations } from "@/hooks/useEvaluations";
 import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
 import { playerAgeGroup } from "@/lib/mock-data";
 import { calcSliderOverall, aggregateScoresByPlayer } from "@/lib/scoring";
+import { useHasMounted } from "@/hooks/useHasMounted";
 import OverallScore from "@/components/OverallScore";
 import { Layers, ChevronRight, Check } from "lucide-react";
 import { toast } from "sonner";
@@ -20,6 +21,7 @@ const COLUMNS: { key: PlayerGradeValue; label: string; color: string }[] = [
 ];
 
 export default function TeamBuilder() {
+  const hasMounted = useHasMounted();
   const { data: players = [], isLoading } = usePlayers();
   const { data: grades = [] } = useMyPlayerGrades();
   const { data: evaluations = [] } = useEvaluations();
@@ -115,9 +117,9 @@ export default function TeamBuilder() {
               return (
                 <motion.div
                   key={player.id}
-                  initial={{ opacity: 0, y: 8 }}
+                  initial={hasMounted.current ? false : { opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.03 }}
+                  transition={hasMounted.current ? undefined : { delay: i * 0.03 }}
                   className="bg-card rounded-xl p-3 card-elevated space-y-2"
                 >
                   <div className="flex items-center gap-3">
