@@ -118,7 +118,7 @@
       footer { border-top: 1px solid var(--border); padding: 30px 0; }
       .foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
       .foot .brand-sm { font-family: "Space Grotesk", sans-serif; font-weight: 600; }
-      .foot-links { display: flex; gap: 20px; font-size: 14px; color: var(--muted); }
+      .foot-links { display: flex; flex-wrap: wrap; gap: 10px 20px; font-size: 14px; color: var(--muted); }
       .foot-links a:hover { color: var(--text); }
 
       @media (max-width: 860px) {
@@ -127,6 +127,11 @@
         .tier.feature { order: -1; }
         .faq-grid { grid-template-columns: 1fr; gap: 22px; }
         .nav-right .btn-text { display: none; }
+      }
+
+      @media (max-width: 420px) {
+        .brand span { display: none; }
+        .nav .btn-primary { padding: 10px 14px; font-size: 13.5px; }
       }
     </style>
   </head>
@@ -267,6 +272,8 @@
         <div class="foot-links">
           <span>© DoDiDe LLC</span>
           <a href="/">Home</a>
+          <a href="/tour.html">Product tour</a>
+          <a href="/clubs.html">For clubs</a>
           <a href="/privacy.html">Privacy</a>
           <a href="/terms.html">Terms</a>
           <a href="https://app.diamondaudit.io/auth">Sign in</a>

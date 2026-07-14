@@ -150,15 +150,20 @@
       footer { border-top: 1px solid var(--border); padding: 32px 0; }
       .foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
       .foot .brand-sm { font-family: "Space Grotesk", sans-serif; font-weight: 600; }
-      .foot-links { display: flex; gap: 20px; font-size: 14px; color: var(--muted); }
+      .foot-links { display: flex; flex-wrap: wrap; gap: 10px 20px; font-size: 14px; color: var(--muted); }
       .foot-links a:hover { color: var(--text); }
 
       @media (max-width: 860px) {
         .hero-grid { grid-template-columns: 1fr; gap: 40px; }
         .hero h1 { font-size: 38px; }
         .features, .steps { grid-template-columns: 1fr; }
-        .nav-right .btn-ghost { display: none; }
+        .nav-right .btn-text { display: none; }
         section { padding: 60px 0; }
+      }
+
+      @media (max-width: 420px) {
+        .brand span { display: none; }
+        .nav .btn-primary { padding: 10px 14px; font-size: 13.5px; }
       }
     </style>
   </head>
@@ -365,6 +370,9 @@
         <span class="brand-sm">DiamondAudit</span>
         <div class="foot-links">
           <span>© DoDiDe LLC</span>
+          <a href="/tour.html">Product tour</a>
+          <a href="/pricing.html">Pricing</a>
+          <a href="/clubs.html">For clubs</a>
           <a href="/privacy.html">Privacy</a>
           <a href="/terms.html">Terms</a>
           <a href="https://app.diamondaudit.io/auth">Sign in</a>
