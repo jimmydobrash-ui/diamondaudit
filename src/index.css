@@ -107,3 +107,17 @@
     @apply min-h-[44px] min-w-[44px];
   }
 }
+
+/* iOS Safari auto-zooms the viewport whenever a focused input's font-size is
+   under 16px — the evaluate screen's 14px search, measurable, and notes fields
+   triggered that mid-tryout, forcing coaches to pinch back out. Force >=16px on
+   touch devices so focusing a field never zooms. We deliberately do NOT lock
+   zoom with maximum-scale/user-scalable (that fails accessibility); users can
+   still pinch-zoom by choice. */
+@media (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
