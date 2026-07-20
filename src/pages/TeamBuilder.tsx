@@ -1,14 +1,18 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import GradeBadge from "@/components/GradeBadge";
+import TeamBuilderRosterSummary from "@/components/TeamBuilderRosterSummary";
+import { sortByScoreThenName, positionCounts, offerListCsv } from "@/components/TeamBuilderMath";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useMyPlayerGrades, useSetPlayerGrade, type PlayerGradeValue } from "@/hooks/usePlayerGrades";
 import { useEvaluations } from "@/hooks/useEvaluations";
 import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
-import { playerAgeGroup } from "@/lib/mock-data";
+import { useAuth } from "@/hooks/useAuth";
+import { playerAgeGroup, sortAgeGroups } from "@/lib/mock-data";
 import { calcSliderOverall, aggregateScoresByPlayer } from "@/lib/scoring";
+import { downloadCsv } from "@/lib/csv";
 import { useHasMounted } from "@/hooks/useHasMounted";
 import OverallScore from "@/components/OverallScore";
 import { Layers, ChevronRight, Check } from "lucide-react";
@@ -20,8 +24,14 @@ const COLUMNS: { key: PlayerGradeValue; label: string; color: string }[] = [
   { key: "pass", label: "Pass", color: "border-red-500/40" },
 ];
 
+// A sensible youth-baseball default; the coach adjusts it per age group and it
+// persists per org+group in localStorage (single-admin-device v1).
+const DEFAULT_ROSTER_TARGET = 12;
+const rosterTargetsKey = (orgId: string) => `da:teambuilder:roster-targets:${orgId}`;
+
 export default function TeamBuilder() {
   const hasMounted = useHasMounted();
+  const { organizationId } = useAuth();
   const { data: players = [], isLoading } = usePlayers();
   const { data: grades = [] } = useMyPlayerGrades();
   const { data: evaluations = [] } = useEvaluations();
@@ -29,6 +39,21 @@ export default function TeamBuilder() {
   const categories = useMemo(() => template?.categories ?? [], [template]);
   const setGrade = useSetPlayerGrade();
   const [activeTab, setActiveTab] = useState<PlayerGradeValue | "ungraded">("ungraded");
+  const [ageFilter, setAgeFilter] = useState("all");
+  const [rosterTargets, setRosterTargets] = useState<Record<string, number>>({});
+
+  // Load persisted per-age-group roster targets once the org is known. A shared
+  // org-wide target would need a DB column; localStorage is fine for the single
+  // admin running the tryout on one device.
+  useEffect(() => {
+    if (!organizationId) return;
+    try {
+      const raw = localStorage.getItem(rosterTargetsKey(organizationId));
+      setRosterTargets(raw ? JSON.parse(raw) : {});
+    } catch {
+      setRosterTargets({});
+    }
+  }, [organizationId]);
 
   const gradeMap = useMemo(() => {
     const m: Record<string, PlayerGradeValue> = {};
@@ -48,16 +73,52 @@ export default function TeamBuilder() {
     return out;
   }, [evaluations, categories]);
 
+  const ageGroups = useMemo(
+    () => sortAgeGroups([...new Set(players.map(p => playerAgeGroup(p)))]),
+    [players],
+  );
+
+  const scopedPlayers = useMemo(
+    () => (ageFilter === "all" ? players : players.filter(p => playerAgeGroup(p) === ageFilter)),
+    [players, ageFilter],
+  );
+
+  // Group by grade within the selected age group, then rank each column
+  // (highest overall first, unevaluated last alphabetically) so the Bubble tab
+  // reads as a decision queue.
   const grouped = useMemo(() => {
     const result: Record<PlayerGradeValue | "ungraded", typeof players> = {
       offer: [], bubble: [], pass: [], ungraded: [],
     };
-    players.forEach(p => {
+    scopedPlayers.forEach(p => {
       const g = gradeMap[p.id];
       result[g ?? "ungraded"].push(p);
     });
+    const scoreOf = (id: string) => playerScores[id];
+    (Object.keys(result) as (PlayerGradeValue | "ungraded")[]).forEach(k => {
+      result[k] = sortByScoreThenName(result[k], scoreOf);
+    });
     return result;
-  }, [players, gradeMap]);
+  }, [scopedPlayers, gradeMap, playerScores]);
+
+  const offeredPositions = useMemo(() => positionCounts(grouped.offer), [grouped.offer]);
+
+  const rosterTarget =
+    ageFilter === "all" ? DEFAULT_ROSTER_TARGET : rosterTargets[ageFilter] ?? DEFAULT_ROSTER_TARGET;
+
+  const setRosterTarget = (next: number) => {
+    if (ageFilter === "all" || !organizationId) return;
+    const clamped = Math.max(1, Math.min(40, Math.round(next)));
+    setRosterTargets(prev => {
+      const updated = { ...prev, [ageFilter]: clamped };
+      try {
+        localStorage.setItem(rosterTargetsKey(organizationId), JSON.stringify(updated));
+      } catch {
+        /* private mode / quota — keep the in-memory value */
+      }
+      return updated;
+    });
+  };
 
   const handleGrade = async (playerId: string, grade: PlayerGradeValue | null) => {
     try {
@@ -65,6 +126,16 @@ export default function TeamBuilder() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
     }
+  };
+
+  const handleExport = () => {
+    const offers = grouped.offer;
+    if (offers.length === 0) return;
+    const csv = offerListCsv(offers, id => playerScores[id]);
+    const scope = ageFilter === "all" ? "all" : ageFilter;
+    const date = new Date().toISOString().slice(0, 10);
+    downloadCsv(`diamondaudit-offers-${scope}-${date}.csv`, csv);
+    toast.success(`Exported ${offers.length} offer${offers.length === 1 ? "" : "s"}`);
   };
 
   const tabs = [
@@ -80,8 +151,31 @@ export default function TeamBuilder() {
             <Layers className="w-5 h-5 text-primary" />
             <h1 className="text-2xl font-bold text-foreground tracking-tight">Team Builder</h1>
           </div>
-          <p className="text-sm text-muted-foreground">Grade players as Offer, Bubble, or Pass</p>
+          <p className="text-sm text-muted-foreground">Grade players and build your roster by age group</p>
         </motion.div>
+
+        {/* Age-group filter — build rosters one group at a time */}
+        {ageGroups.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            <button onClick={() => setAgeFilter("all")} className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${ageFilter === "all" ? "bg-foreground text-background" : "bg-secondary text-muted-foreground"}`}>All Ages</button>
+            {ageGroups.map(ag => (
+              <button key={ag} onClick={() => setAgeFilter(ag)} className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${ageFilter === ag ? "bg-foreground text-background" : "bg-secondary text-muted-foreground"}`}>{ag}</button>
+            ))}
+          </div>
+        )}
+
+        {/* Roster math + position coverage + export */}
+        {!isLoading && players.length > 0 && (
+          <TeamBuilderRosterSummary
+            ageGroup={ageFilter}
+            offeredCount={grouped.offer.length}
+            bubbleCount={grouped.bubble.length}
+            target={rosterTarget}
+            onTargetChange={setRosterTarget}
+            positions={offeredPositions}
+            onExport={handleExport}
+          />
+        )}
 
         {/* Tabs */}
         <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
@@ -108,7 +202,9 @@ export default function TeamBuilder() {
             ))
           ) : grouped[activeTab].length === 0 ? (
             <div className="py-12 text-center text-muted-foreground text-sm">
-              No players in this category
+              {ageFilter === "all"
+                ? "No players in this category"
+                : `No ${ageFilter} players in this category`}
             </div>
           ) : (
             grouped[activeTab].map((player, i) => {
@@ -173,21 +269,6 @@ export default function TeamBuilder() {
             })
           )}
         </div>
-
-        {/* Summary */}
-        {!isLoading && (
-          <div className="bg-card rounded-xl p-4 card-elevated">
-            <h3 className="text-sm font-semibold text-foreground mb-3">Summary</h3>
-            <div className="grid grid-cols-4 gap-3 text-center">
-              {tabs.map(tab => (
-                <div key={tab.key}>
-                  <div className="text-2xl font-bold text-foreground">{tab.count}</div>
-                  <div className="text-xs text-muted-foreground">{tab.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </AppLayout>
   );
