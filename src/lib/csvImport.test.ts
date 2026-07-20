@@ -78,6 +78,33 @@ describe("parseRosterCsv", () => {
     expect(players[0].jersey_number).toBe(15);
   });
 
+  it("accepts jersey numbers above 100 (tryouts can run past 99)", () => {
+    const csv = [
+      header,
+      "Marcus,Johnson,2012-05-10,SS,R,R,150,",
+      "Eli,Carter,2011-08-22,C,L,R,999,",
+    ].join("\n");
+    const { players, errors } = parseRosterCsv(csv);
+    expect(errors).toEqual([]);
+    expect(players[0].jersey_number).toBe(150);
+    expect(players[1].jersey_number).toBe(999);
+  });
+
+  it("does not reject or dedupe rows with duplicate jersey numbers", () => {
+    // Two different players sharing #7 — dedupe is keyed on name+DOB, never on
+    // jersey, so both should import cleanly with no duplicate-jersey error.
+    const csv = [
+      header,
+      "Marcus,Johnson,2012-05-10,SS,R,R,7,",
+      "Eli,Carter,2011-08-22,C,L,R,7,",
+    ].join("\n");
+    const { players, errors } = parseRosterCsv(csv);
+    expect(errors).toEqual([]);
+    expect(players).toHaveLength(2);
+    expect(players[0].jersey_number).toBe(7);
+    expect(players[1].jersey_number).toBe(7);
+  });
+
   it("rejects rows missing a name or DOB and reports the file row number", () => {
     const csv = [
       header,

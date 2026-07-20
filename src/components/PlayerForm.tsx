@@ -176,7 +176,7 @@ export default function PlayerForm({ initial, submitting, submitLabel, onSubmit 
       <div className="grid grid-cols-3 gap-3">
         <div>
           <label className="text-xs font-medium text-muted-foreground block mb-1">Jersey #</label>
-          <input type="number" value={form.jersey_number} onChange={e => setForm(p => ({ ...p, jersey_number: e.target.value }))} min={0} max={99} className="w-full h-11 px-3 rounded-xl bg-secondary text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+          <input type="number" value={form.jersey_number} onChange={e => setForm(p => ({ ...p, jersey_number: e.target.value }))} min={0} max={999} className="w-full h-11 px-3 rounded-xl bg-secondary text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
         </div>
         <div>
           <label className="text-xs font-medium text-muted-foreground block mb-1">Height</label>
