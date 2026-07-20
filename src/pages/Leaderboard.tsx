@@ -161,7 +161,9 @@ export default function Leaderboard() {
             // For a measurable-only category (e.g. Running), show the actual
             // measured values instead of a meaningless 0–10.
             const showMeasurables = cat !== null && sliderAvg === null;
-            const measurables = showMeasurables ? categoryMeasurables(item.scores, cat) : [];
+            // Always compute measurables when we have a category so we can show
+            // the primary measurable alongside slider scores (if it exists).
+            const measurables = cat ? categoryMeasurables(item.scores, cat) : [];
             const primId = cat ? primaryMeasurable(cat)?.id : undefined;
             const primMeas = measurables.find(m => m.id === primId) ?? measurables[0] ?? null;
             const secondaryMeasurables = measurables.filter(m => m.id !== primMeas?.id);
@@ -199,7 +201,14 @@ export default function Leaderboard() {
                       <span className="text-lg font-bold text-muted-foreground flex-shrink-0">—</span>
                     )
                   ) : (
-                    <OverallScore value={sortBy === "overall" ? item.overall : (sliderAvg as number)} showTier className={`text-lg font-bold ${i === 0 ? "text-primary" : "text-foreground"}`} />
+                    <div className="text-right flex-shrink-0">
+                      <OverallScore value={sortBy === "overall" ? item.overall : (sliderAvg as number)} showTier className={`text-lg font-bold ${i === 0 ? "text-primary" : "text-foreground"}`} />
+                      {primMeas ? (
+                        <div className="text-[10px] text-muted-foreground mt-0.5">
+                          {primMeas.label}: <strong>{primMeas.value}{primMeas.unit ? ` ${primMeas.unit}` : ""}</strong>
+                        </div>
+                      ) : null}
+                    </div>
                   )}
                 </Link>
               </motion.div>
