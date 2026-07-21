@@ -24,7 +24,7 @@ describe("EvaluationTimer", () => {
   });
 
   it("does not capture anything until the coach stops it", () => {
-    let now = 2000;
+    const now = 2000;
     vi.spyOn(performance, "now").mockImplementation(() => now);
     const onCapture = vi.fn();
     render(<EvaluationTimer onCapture={onCapture} />);

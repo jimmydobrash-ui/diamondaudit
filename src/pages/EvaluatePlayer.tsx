@@ -146,6 +146,12 @@ export default function EvaluatePlayer() {
   }
 
   const currentCategory = visibleCategories[activeCategory];
+  // On a timed category (e.g. Running) the stopwatches take over the screen, so
+  // we hide the Offer/Bubble/Pass block here to give them room and keep the tap
+  // targets clear — grading is still available on every other category tab.
+  const currentCategoryHasTimer = !!currentCategory?.skills.some(
+    skill => skill.type === "number" && (skill.unit ?? "") === "sec",
+  );
 
   return (
     <AppLayout>
@@ -229,8 +235,8 @@ export default function EvaluatePlayer() {
           </motion.div>
         )}
 
-        {/* Grade Selection */}
-        {(() => {
+        {/* Grade Selection — hidden on timed tabs (the timer needs the room) */}
+        {!currentCategoryHasTimer && (() => {
           const currentGrade = myGrades.find(g => g.player_id === playerId)?.grade ?? null;
           const gradeOptions: { key: PlayerGradeValue; label: string; color: string }[] = [
             { key: "offer", label: "Offer", color: "border-emerald-500/40" },

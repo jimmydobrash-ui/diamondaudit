@@ -7,9 +7,11 @@ interface EvaluationTimerProps {
 }
 
 // A one-thumb stopwatch for timed drills (home-to-1st, 60-yard, pop time).
-// Start when the runner goes, Stop when they hit the bag — stopping drops the
-// time straight into the measurable field. The field stays editable, so this
-// never blocks manual entry; it's just a faster way to fill it.
+// Deliberately BIG: on a field, a small stop button that misfires means a wrong
+// time gets saved to a player, so the primary action is a full-width, tall,
+// color-coded button (green Start / red Stop) that's hard to miss. Reset is
+// small and separated so it can't be fat-fingered — and it only clears the
+// readout, never the captured value already in the field.
 export default function EvaluationTimer({ onCapture }: EvaluationTimerProps) {
   const [running, setRunning] = useState(false);
   const [display, setDisplay] = useState(0); // seconds shown on the readout
@@ -57,33 +59,38 @@ export default function EvaluationTimer({ onCapture }: EvaluationTimerProps) {
     setDisplay(0);
   }, [clearTick]);
 
+  const canReset = !running && !(display === 0 && startRef.current === null);
+
   return (
-    <div className="flex items-center gap-2 mt-2">
+    <div className="mt-3">
+      <div className="text-center mb-2 leading-none">
+        <span className="text-5xl font-bold tabular-nums tracking-tight text-foreground">{display.toFixed(2)}</span>
+        <span className="text-base text-muted-foreground ml-1.5">sec</span>
+      </div>
       <button
         type="button"
         onClick={running ? stop : start}
         aria-label={running ? "Stop timer" : "Start timer"}
-        className={`h-11 flex-1 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-colors ${
+        className={`w-full h-24 rounded-2xl font-bold text-2xl flex items-center justify-center gap-3 transition-colors active:brightness-95 ${
           running
             ? "bg-primary text-primary-foreground"
-            : "bg-secondary text-foreground active:bg-secondary/70"
+            : "bg-success text-success-foreground"
         }`}
       >
-        {running ? <Square className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+        {running ? <Square className="w-8 h-8" /> : <Play className="w-8 h-8" />}
         {running ? "Stop" : "Start"}
       </button>
-      <span className="w-16 text-right text-lg font-bold tabular-nums text-foreground" aria-live="off">
-        {display.toFixed(2)}
-      </span>
-      <button
-        type="button"
-        onClick={reset}
-        disabled={running || (display === 0 && startRef.current === null)}
-        aria-label="Reset timer"
-        className="w-11 h-11 flex-shrink-0 rounded-lg bg-secondary text-muted-foreground flex items-center justify-center active:bg-secondary/70 transition-colors disabled:opacity-40 disabled:pointer-events-none"
-      >
-        <RotateCcw className="w-4 h-4" />
-      </button>
+      <div className="flex justify-center mt-2">
+        <button
+          type="button"
+          onClick={reset}
+          disabled={!canReset}
+          aria-label="Reset timer"
+          className="h-9 px-5 rounded-lg text-sm font-medium text-muted-foreground flex items-center gap-1.5 hover:text-foreground disabled:opacity-40 disabled:pointer-events-none transition-colors"
+        >
+          <RotateCcw className="w-3.5 h-3.5" /> Reset
+        </button>
+      </div>
     </div>
   );
 }
