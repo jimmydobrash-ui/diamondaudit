@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useEvaluations } from "@/hooks/useEvaluations";
@@ -13,8 +13,21 @@ import OverallScore from "@/components/OverallScore";
 import { BarChart3, Trophy, Download } from "lucide-react";
 
 export default function Leaderboard() {
-  const [sortBy, setSortBy] = useState("overall");
-  const [ageFilter, setAgeFilter] = useState("all");
+  // Keep the sort + age filters in the URL (not local state) so that when a coach
+  // taps into a player and hits "back", they return to the same filtered view
+  // instead of a reset "All Ages / Overall" list. Replace (don't push) so toggling
+  // filters doesn't clutter history.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const sortBy = searchParams.get("sort") ?? "overall";
+  const ageFilter = searchParams.get("age") ?? "all";
+  const setFilterParam = (key: string, value: string, fallback: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (value === fallback) next.delete(key);
+    else next.set(key, value);
+    setSearchParams(next, { replace: true });
+  };
+  const setSortBy = (value: string) => setFilterParam("sort", value, "overall");
+  const setAgeFilter = (value: string) => setFilterParam("age", value, "all");
   const hasMounted = useHasMounted();
   const { data: players = [], isLoading: playersLoading } = usePlayers();
   const { data: evaluations = [], isLoading: evalsLoading } = useEvaluations();

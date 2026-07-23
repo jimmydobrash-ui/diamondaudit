@@ -119,13 +119,26 @@ export default function EvaluatePlayer() {
     const ok = await handleSave();
     if (!ok) return;
     // Advance to the next player in the current age group (tryout order); when
-    // the group is finished, fall back to the evaluate list.
+    // the group is finished, fall back to the evaluate list. Replace (don't push)
+    // so the history stack stays flat — "back" returns to wherever the coach
+    // entered from (Results, dashboard…) rather than each player they walked.
     if (nextPlayer) {
-      navigate(`/evaluate/${nextPlayer.id}`);
+      navigate(`/evaluate/${nextPlayer.id}`, { replace: true });
     } else {
-      navigate("/evaluate");
+      navigate("/evaluate", { replace: true });
     }
   };
+
+  // Return to wherever the coach came from (Results, dashboard, Players…) rather
+  // than a hardcoded tab. RR tracks the history position in window.history.state.idx;
+  // idx === 0 means we were deep-linked/refreshed straight onto this page with
+  // nothing to pop, so we fall back to the evaluate list. Walking players uses
+  // replace, which keeps idx, so this still returns to the true origin.
+  const goBack = useCallback(() => {
+    const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+    if (idx > 0) navigate(-1);
+    else navigate("/evaluate");
+  }, [navigate]);
 
   if (!player && players.length > 0) {
     return (
@@ -157,7 +170,7 @@ export default function EvaluatePlayer() {
     <AppLayout>
       <div className="container py-4 space-y-4">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3">
-          <button onClick={() => navigate("/evaluate")} aria-label="Back to evaluate list" className="touch-target flex items-center justify-center text-muted-foreground">
+          <button onClick={goBack} aria-label="Back" className="touch-target flex items-center justify-center text-muted-foreground">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
@@ -190,7 +203,7 @@ export default function EvaluatePlayer() {
               {searchMatches.map(m => (
                 <button
                   key={m.id}
-                  onClick={() => { setSearch(""); navigate(`/evaluate/${m.id}`); }}
+                  onClick={() => { setSearch(""); navigate(`/evaluate/${m.id}`, { replace: true }); }}
                   className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-secondary/60 transition-colors"
                 >
                   <span className="w-9 text-xs font-bold text-muted-foreground flex-shrink-0">#{m.jersey_number ?? "?"}</span>
@@ -291,13 +304,13 @@ export default function EvaluatePlayer() {
 
         <div className="flex items-center justify-between text-xs text-muted-foreground pb-4">
           {prevPlayer ? (
-            <button onClick={() => navigate(`/evaluate/${prevPlayer.id}`)} className="flex items-center gap-1 touch-target">
+            <button onClick={() => navigate(`/evaluate/${prevPlayer.id}`, { replace: true })} className="flex items-center gap-1 touch-target">
               <ArrowLeft className="w-3 h-3" /> #{prevPlayer.jersey_number} {prevPlayer.last_name}
             </button>
           ) : <span />}
           <span>{orderIndex >= 0 ? orderIndex + 1 : "–"} of {groupOrder.length} · {playerAgeGroup(player)}</span>
           {nextPlayer ? (
-            <button onClick={() => navigate(`/evaluate/${nextPlayer.id}`)} className="flex items-center gap-1 touch-target">
+            <button onClick={() => navigate(`/evaluate/${nextPlayer.id}`, { replace: true })} className="flex items-center gap-1 touch-target">
               #{nextPlayer.jersey_number} {nextPlayer.last_name} <ArrowRight className="w-3 h-3" />
             </button>
           ) : <span />}
