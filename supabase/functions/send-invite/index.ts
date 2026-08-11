@@ -29,6 +29,18 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
+// Escape user-controlled values before interpolating them into the email HTML.
+// The org name is admin-controlled free text, so without this an admin could
+// inject markup into an email sent from our verified domain.
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -83,14 +95,19 @@ Deno.serve(async (req: Request) => {
       .eq("id", invite.organization_id)
       .single();
     const orgName = org?.name ?? "a DiamondAudit organization";
+    // orgName is admin-controlled free text; escape it (and the role) before it
+    // goes into the email HTML. The subject below is plain text, so it uses the
+    // raw value.
+    const safeOrgName = escapeHtml(orgName);
+    const safeRole = escapeHtml(String(invite.role));
 
     const link = `${siteUrl}/auth?invite=1&email=${encodeURIComponent(invite.email)}`;
 
     const html = `
       <div style="font-family: -apple-system, Segoe UI, Roboto, sans-serif; max-width: 480px; margin: 0 auto;">
-        <h2 style="color:#111;">You're invited to ${orgName}</h2>
+        <h2 style="color:#111;">You're invited to ${safeOrgName}</h2>
         <p style="color:#444; font-size:15px; line-height:1.5;">
-          You've been invited to join <strong>${orgName}</strong> on DiamondAudit as a ${invite.role}.
+          You've been invited to join <strong>${safeOrgName}</strong> on DiamondAudit as a ${safeRole}.
           Click below to accept and get started.
         </p>
         <p style="margin:24px 0;">
