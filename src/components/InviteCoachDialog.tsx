@@ -74,7 +74,9 @@ export default function InviteCoachDialog({ open, onClose }: Props) {
         .single();
       if (error) throw error;
 
-      const link = `${window.location.origin}/auth?invite=1&email=${encodeURIComponent(cleanEmail)}`;
+      // Opaque invite id only — no email in the URL (browser history, Referer
+      // headers, server/analytics logs would otherwise all see it in plaintext).
+      const link = `${window.location.origin}/auth?invite=${invite.id}`;
       setInviteLink(link);
 
       // Try to email the link. Falls back to the copy-link UX if the email

@@ -1,22 +1,65 @@
-import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Mail, Lock, UserPlus, LogIn, ArrowLeft, Send } from "lucide-react";
 
 type Mode = "signin" | "signup" | "forgot" | "confirmation-sent" | "reset-sent";
 
-export default function Auth() {
-  const [searchParams] = useSearchParams();
-  const isInvite = searchParams.get("invite") === "1";
-  const invitedEmail = searchParams.get("email") ?? "";
+// get_invite_email ships in a hand-applied migration
+// (supabase/migrations/20260815000000_invite_lookup_rpc.sql). The generated
+// src/integrations/supabase/types.ts won't know about it until it's
+// regenerated against the live schema post-apply, hence the `as never`
+// casts on the .rpc() call below.
+interface InviteLookup {
+  email: string;
+  organization_name: string;
+}
 
+export default function Auth() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const inviteParam = searchParams.get("invite");
+  // Old links put the invitee's raw email straight in the URL
+  // (?invite=1&email=...) — already-sent/copied ones must keep working.
+  // Current links carry only the invite's opaque id (?invite=<uuid>); the
+  // email is resolved server-side below so it never sits in the URL,
+  // browser history, Referer headers, or analytics.
+  const isLegacyInvite = inviteParam === "1";
+  const inviteId = inviteParam && !isLegacyInvite ? inviteParam : null;
+  const legacyEmail = isLegacyInvite ? (searchParams.get("email") ?? "") : "";
+
+  const [isInvite, setIsInvite] = useState(isLegacyInvite || !!inviteId);
+  const [inviteOrgName, setInviteOrgName] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>(isInvite ? "signup" : "signin");
-  const [email, setEmail] = useState(invitedEmail);
+  const [email, setEmail] = useState(legacyEmail);
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [orgName, setOrgName] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!inviteId) return;
+    (async () => {
+      const { data, error } = await supabase.rpc("get_invite_email" as never, {
+        p_invite_id: inviteId,
+      } as never);
+      const invite = ((data as unknown as InviteLookup[] | null) ?? [])[0] ?? null;
+
+      if (error || !invite) {
+        toast.error("This invite link is invalid or has expired.");
+        setIsInvite(false);
+        setMode("signin");
+        return;
+      }
+
+      setEmail(invite.email);
+      setInviteOrgName(invite.organization_name);
+      // Drop the id from the address bar now that it's resolved, so it
+      // doesn't linger in history any longer than it has to.
+      navigate("/auth", { replace: true });
+    })();
+  }, [inviteId, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,7 +146,11 @@ export default function Auth() {
 
         {mode === "signup" && isInvite && (
           <div className="mb-3 p-3 rounded-xl bg-primary/10 border border-primary/20 text-xs text-foreground">
-            You've been invited to join an organization. Sign up to accept.
+            {inviteOrgName ? (
+              <>You've been invited to join <strong>{inviteOrgName}</strong>. Sign up to accept.</>
+            ) : (
+              "You've been invited to join an organization. Sign up to accept."
+            )}
           </div>
         )}
 

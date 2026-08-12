@@ -153,6 +153,8 @@ All tables have RLS enabled. Org isolation is enforced through SECURITY DEFINER 
 7. `20260522000000_lock_down_role_invite_eval` — locks down `user_roles` INSERT (bootstrap-or-matching-invite only), an `organization_invites` immutability trigger, and player/event ownership checks in `upsert_evaluation`. **Applied to prod.**
 8. `20260608000000_lock_down_fn_grants_and_org_insert` — revokes anon/PUBLIC `EXECUTE` on the SECURITY DEFINER helpers (keeps `authenticated` for the RLS helpers + `upsert_evaluation`; internal trigger fns owner-only), and replaces the `organizations` INSERT `WITH CHECK (true)` with a first-org bootstrap check. **Applied to prod + verified (RLS intact).**
 9. `20260624000000_bump_invite_expiry_14d` — bumps the `organization_invites.expires_at` column default from 7d to 14d (new invites only). **Applied to prod + verified.**
+10. `20260731000000_tighten_eval_grade_update_check` — adds a `WITH CHECK` to the `evaluations` + `player_grades` "Coaches can update own …" UPDATE policies (they only had `USING`, so the new row's `organization_id` went unvalidated on a direct-table PATCH). **Applied to prod + verified in `pg_policies`.**
+11. `20260815000000_invite_lookup_rpc` — adds `get_invite_email(uuid)` (SECURITY DEFINER, granted to `anon` + `authenticated`) so an anonymous invitee can resolve an opaque invite id to their email at signup; this is what lets invite links stop carrying the raw email. Returns only email + org name, and only for a still-`pending`, unexpired invite. **NOT yet applied to prod** — must be applied *before* the frontend that generates `?invite=<uuid>` links deploys, or new invites break.
 
 > **Note:** migrations are applied manually (via the Supabase MCP/SQL editor), not by a CI pipeline — the `supabase_migrations` tracking table is empty. Keep the `.sql` files and prod in sync by hand.
 
@@ -177,11 +179,11 @@ All tables have RLS enabled. Org isolation is enforced through SECURITY DEFINER 
 
 An admin invites a coach via [`InviteCoachDialog`](src/components/InviteCoachDialog.tsx), which inserts a row into `organization_invites`. Three ways the recipient ends up in the org:
 
-1. **Email** — the dialog calls the [`send-invite`](supabase/functions/send-invite/) Edge Function (Resend) with the invite id; the function verifies the caller is an org admin (service role) and emails the link `…/auth?invite=1&email=…`. **Inert until deployed + secrets set** (see its README); the dialog **falls back to the copy-link UX** if the call fails, so invites always work.
+1. **Email** — the dialog calls the [`send-invite`](supabase/functions/send-invite/) Edge Function (Resend) with the invite id; the function verifies the caller is an org admin (service role) and emails the link `…/auth?invite=<invite-uuid>`. **Inert until deployed + secrets set** (see its README); the dialog **falls back to the copy-link UX** if the call fails, so invites always work.
 2. **Auto-join at signup** — if the recipient signs up with the invited email, `bootstrapOrganization` auto-joins them to the inviter's org (see Auth flow).
 3. **Pending-invite banner** — an already-registered user with a matching pending invite sees [`PendingInviteBanner`](src/components/PendingInviteBanner.tsx) and can accept (this is the path for adding an *existing* user to an *additional* org).
 
-`Auth.tsx` reads `?invite=1&email=…` to prefill the email and skip the org-name field (so signup doesn't stash a `pending_org_name`).
+**Invite links never carry the invitee's email.** The link is `?invite=<invite-uuid>`; `Auth.tsx` resolves that opaque id to the email via the `get_invite_email` RPC (migration 11), prefills the field, skips the org-name field (so signup doesn't stash a `pending_org_name`), and then strips the id from the address bar. The old `?invite=1&email=…` format is still accepted as a fallback so already-sent links keep working — don't reintroduce it for *new* links: putting the raw email in a URL leaks it into browser history, `Referer` headers, and server/analytics logs.
 
 ---
 

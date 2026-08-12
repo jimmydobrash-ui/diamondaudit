@@ -1,7 +1,8 @@
 import { QueryClient, QueryClientProvider, QueryCache } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { lazy, Suspense, useEffect } from "react";
+import { initAnalytics, trackPageview } from "@/lib/analytics";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -107,6 +108,22 @@ function useIdlePrefetchMainTabs(enabled: boolean) {
   }, [enabled]);
 }
 
+// GA4 pageviews. Reported from here rather than by gtag's own history
+// listener (which is switched off in the dashboard) because only this path
+// runs URLs through the sanitiser first — app routes carry player UUIDs, and
+// /auth historically carried an invitee's email in the query string.
+function useAnalyticsPageviews() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    initAnalytics();
+  }, []);
+
+  useEffect(() => {
+    trackPageview(pathname);
+  }, [pathname]);
+}
+
 const PageFallback = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
     <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -132,6 +149,7 @@ const AppRoutes = () => {
   // an anonymous visitor sitting on /auth has no use for the app shell yet.
   const { user } = useAuth();
   useIdlePrefetchMainTabs(!!user);
+  useAnalyticsPageviews();
 
   return (
     <Suspense fallback={<PageFallback />}>
