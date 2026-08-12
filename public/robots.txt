@@ -1,14 +1,5 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
+# app.diamondaudit.io is a fully authenticated application — every route is
+# behind a login and renders an empty shell to crawlers. Keep it out of the
+# index. (Not a security control; that's Supabase RLS + ProtectedRoute.)
 User-agent: *
-Allow: /
+Disallow: /

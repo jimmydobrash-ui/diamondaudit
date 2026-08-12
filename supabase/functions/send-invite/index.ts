@@ -101,7 +101,9 @@ Deno.serve(async (req: Request) => {
     const safeOrgName = escapeHtml(orgName);
     const safeRole = escapeHtml(String(invite.role));
 
-    const link = `${siteUrl}/auth?invite=1&email=${encodeURIComponent(invite.email)}`;
+    // Opaque invite id only — putting the raw email in the URL leaks it into
+    // browser history, Referer headers, and server/analytics logs.
+    const link = `${siteUrl}/auth?invite=${invite.id}`;
 
     const html = `
       <div style="font-family: -apple-system, Segoe UI, Roboto, sans-serif; max-width: 480px; margin: 0 auto;">
