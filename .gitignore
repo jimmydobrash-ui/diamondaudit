@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Vercel CLI local project link (org/project IDs; this repo deploys via git
+# integration, not CLI, so linkage is machine-local tooling state only)
+.vercel
+
 # Environment
 .env
 .env.*
