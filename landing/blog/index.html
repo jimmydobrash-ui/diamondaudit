@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blog — DiamondAudit</title>
+    <meta name="description" content="Notes on running better tryouts: process, evaluation, and what the data actually says." />
+
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="canonical" href="https://www.diamondaudit.io/blog/" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Blog — DiamondAudit" />
+    <meta property="og:description" content="Notes on running better tryouts: process, evaluation, and what the data actually says." />
+    <meta property="og:url" content="https://www.diamondaudit.io/blog/" />
+    <meta property="og:image" content="https://diamondaudit.io/screenshots/app-dashboard.webp" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://diamondaudit.io/screenshots/app-dashboard.webp" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- GENERATED FILE — do not edit by hand.
+         Source: landing/blog/posts/  ·  Build: node landing/_build/build.mjs -->
+<style>
+      :root {
+        --bg: #0b0e13;
+        --bg-soft: #11151c;
+        --surface: #151a22;
+        --border: #232a34;
+        --text: #e8eaed;
+        --muted: #98a2b0;
+        --accent: #ef4444;
+        --accent-strong: #dc2626;
+        --accent-soft: rgba(239, 68, 68, 0.12);
+        --radius: 14px;
+        --maxw: 1080px;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html { scroll-behavior: smooth; }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      h1, h2, h3 { font-family: "Space Grotesk", "Inter", sans-serif; line-height: 1.1; letter-spacing: -0.02em; }
+      a { color: inherit; text-decoration: none; }
+      .container { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+      .accent { color: var(--accent); }
+
+      /* Buttons */
+      .btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        font-weight: 600; font-size: 15px; border-radius: 10px;
+        padding: 12px 20px; transition: all 0.15s ease; cursor: pointer; border: 1px solid transparent;
+      }
+      .btn-primary { background: var(--accent); color: #fff; }
+      .btn-primary:hover { background: var(--accent-strong); transform: translateY(-1px); }
+      .btn-ghost { color: var(--text); border-color: var(--border); background: transparent; }
+      .btn-ghost:hover { border-color: var(--muted); }
+      .btn-text { color: var(--muted); font-weight: 500; }
+      .btn-text:hover { color: var(--text); }
+
+      /* Header */
+      header { position: sticky; top: 0; z-index: 50; background: rgba(11, 14, 19, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+      .nav { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+      .brand { display: flex; align-items: center; gap: 10px; font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 18px; }
+      .brand img { height: 30px; width: auto; }
+      .nav-right { display: flex; align-items: center; gap: 18px; }
+
+      /* Hero */
+      .hero { padding: 84px 0 72px; border-bottom: 1px solid var(--border); }
+      .hero-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center; }
+      .eyebrow { display: inline-block; font-size: 13px; font-weight: 600; color: var(--accent); background: var(--accent-soft); padding: 5px 12px; border-radius: 999px; margin-bottom: 22px; letter-spacing: 0.01em; }
+      .hero h1 { font-size: 48px; font-weight: 700; margin-bottom: 20px; }
+      .hero p.sub { font-size: 18px; color: var(--muted); max-width: 540px; margin-bottom: 30px; }
+      .hero-cta { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+      /* Product screenshots */
+      .shot { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface); box-shadow: 0 30px 60px -20px rgba(0,0,0,0.6); }
+      .shot img { display: block; width: 100%; height: auto; }
+
+      /* Showcase: large desktop shot beside a phone shot */
+      .showcase { display: grid; grid-template-columns: 1.55fr 0.62fr; gap: 28px; align-items: center; }
+      .shot-phone { border-radius: 28px; box-shadow: 0 30px 60px -20px rgba(0,0,0,0.75); }
+      .shot-band { margin-top: 44px; }
+      @media (max-width: 860px) {
+        .showcase { grid-template-columns: 1fr; gap: 28px; }
+        .shot-phone { max-width: 270px; margin: 0 auto; }
+      }
+
+      /* Sections */
+      section { padding: 80px 0; }
+      .section-head { max-width: 620px; margin-bottom: 48px; }
+      .section-head h2 { font-size: 34px; font-weight: 700; margin-bottom: 14px; }
+      .section-head p { color: var(--muted); font-size: 17px; }
+
+      /* Feature grid */
+      .features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+      .feature { background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--radius); padding: 26px; }
+      .feature h3 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+      .feature p { color: var(--muted); font-size: 15px; }
+      .feature .dot { width: 9px; height: 9px; border-radius: 999px; background: var(--accent); display: inline-block; margin-bottom: 16px; }
+
+      /* Steps */
+      .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; counter-reset: step; }
+      .step { position: relative; padding-top: 8px; }
+      .step .num { font-family: "Space Grotesk", sans-serif; font-size: 15px; font-weight: 700; color: var(--accent); border: 1px solid var(--border); width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 18px; }
+      .step h3 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+      .step p { color: var(--muted); font-size: 15px; }
+
+      /* Why */
+      .why { background: var(--bg-soft); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+      .why .container { max-width: 760px; text-align: center; }
+      .why h2 { font-size: 30px; margin-bottom: 18px; }
+      .why p { color: var(--muted); font-size: 18px; }
+
+      /* Closing CTA */
+      .closing { text-align: center; }
+      .closing h2 { font-size: 36px; margin-bottom: 14px; }
+      .closing p { color: var(--muted); font-size: 17px; margin-bottom: 28px; }
+      .closing .note { font-size: 13px; color: var(--muted); margin-top: 18px; }
+
+      /* Footer */
+      footer { border-top: 1px solid var(--border); padding: 32px 0; }
+      .foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+      .foot .brand-sm { font-family: "Space Grotesk", sans-serif; font-weight: 600; }
+      .foot-links { display: flex; flex-wrap: wrap; gap: 10px 20px; font-size: 14px; color: var(--muted); }
+      .foot-links a:hover { color: var(--text); }
+
+      @media (max-width: 860px) {
+        .hero-grid { grid-template-columns: 1fr; gap: 40px; }
+        .hero h1 { font-size: 38px; }
+        .features, .steps { grid-template-columns: 1fr; }
+        .nav-right .btn-text { display: none; }
+        section { padding: 60px 0; }
+      }
+
+      @media (max-width: 420px) {
+        .brand span { display: none; }
+        .nav .btn-primary { padding: 10px 14px; font-size: 13.5px; }
+      }
+    </style>
+
+    <style>
+      .post-wrap { max-width: 720px; margin: 0 auto; padding: 56px 20px 80px; }
+      .post-meta { color: var(--muted); font-size: 14px; margin: 0 0 8px; }
+      .post-wrap h1 { font-size: clamp(28px, 5vw, 40px); line-height: 1.15; margin: 0 0 16px; letter-spacing: -0.02em; }
+      .post-body { font-size: 17px; line-height: 1.7; }
+      .post-body h2 { font-size: 22px; margin: 40px 0 12px; letter-spacing: -0.01em; }
+      .post-body p { margin: 0 0 18px; color: var(--text); }
+      .post-body ul, .post-body ol { margin: 0 0 18px; padding-left: 22px; color: var(--text); }
+      .post-body li { margin-bottom: 8px; }
+      .post-body a { color: var(--accent); }
+      .post-body strong { color: #fff; }
+      .post-body blockquote {
+        margin: 24px 0; padding: 12px 20px; border-left: 3px solid var(--accent);
+        background: var(--surface); color: var(--muted); border-radius: 0 8px 8px 0;
+      }
+      .post-cta {
+        margin-top: 48px; padding: 24px; background: var(--surface);
+        border: 1px solid var(--border); border-radius: var(--radius); text-align: center;
+      }
+      .post-cta p { margin: 0 0 14px; color: var(--muted); }
+      .post-list { list-style: none; padding: 0; margin: 32px 0 0; }
+      .post-list li { padding: 20px 0; border-bottom: 1px solid var(--border); }
+      .post-list li:last-child { border-bottom: none; }
+      .post-list a { font-size: 20px; font-weight: 600; color: var(--text); text-decoration: none; letter-spacing: -0.01em; }
+      .post-list a:hover { color: var(--accent); }
+      .post-list p { margin: 6px 0 0; color: var(--muted); font-size: 15px; }
+      .back-link { display: inline-block; margin-bottom: 24px; color: var(--muted); text-decoration: none; font-size: 14px; }
+      .back-link:hover { color: var(--text); }
+    </style>
+    <script src="/analytics.js" defer></script>
+  </head>
+
+  <body>
+<header>
+      <div class="container nav">
+        <a class="brand" href="/">
+          <img src="/logo-256.png" alt="DiamondAudit" />
+          <span>DiamondAudit</span>
+        </a>
+        <div class="nav-right">
+          <a class="btn-text" href="/tour.html">Product tour</a>
+          <a class="btn-text" href="/pricing.html">Pricing</a>
+          <a class="btn-text" href="/clubs.html">For clubs</a>
+          <a class="btn-text" href="/blog/">Blog</a>
+          <a class="btn-text" href="https://app.diamondaudit.io/auth">Sign in</a>
+          <a class="btn btn-primary" href="https://app.diamondaudit.io/auth">Request access →</a>
+        </div>
+      </div>
+    </header>
+    <main class="post-wrap">
+      <h1>Notes from the field</h1>
+      <p class="post-meta">Tryout process, evaluation, and what the data actually says.</p>
+      <ul class="post-list">
+        <li>
+          <a href="/blog/defending-the-cut.html">Defending the cut</a>
+          <p><time datetime="2026-08-14">August 14, 2026</time> · Why we built DiamondAudit: the hardest part of a tryout isn't scoring players, it's explaining the result afterward.</p>
+        </li>
+      </ul>
+    </main>
+<footer>
+      <div class="container foot">
+        <span class="brand-sm">DiamondAudit</span>
+        <div class="foot-links">
+          <span>© DoDiDe LLC</span>
+          <a href="/tour.html">Product tour</a>
+          <a href="/pricing.html">Pricing</a>
+          <a href="/clubs.html">For clubs</a>
+          <a href="/privacy.html">Privacy</a>
+          <a href="/terms.html">Terms</a>
+          <a href="https://app.diamondaudit.io/auth">Sign in</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
