@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { compareForTryout } from "@/lib/rosterOrder";
 import { buildReportCardBundle } from "@/lib/reportCard";
 import { generateReportCardsZip, downloadBlob } from "@/lib/reportCardsZip";
-import { buildSeasonBenchmarks, benchmarksToMarkdown, benchmarksToJson } from "@/lib/seasonBenchmarks";
+import { buildSeasonBenchmarks, buildSeasonBenchmarksZip } from "@/lib/seasonBenchmarks";
 import { buildSeasonRawExportZip } from "@/lib/seasonRawExport";
 import { ArrowLeft, Download, FileText, Database, BarChart3, AlertTriangle, Check, Lock, ShieldAlert } from "lucide-react";
 
@@ -103,7 +103,11 @@ export default function SeasonArchive() {
     () => Object.fromEntries(Object.entries(members).map(([id, m]) => [id, m.name])),
     [members],
   );
-  const orgName = org?.name ?? "DiamondAudit";
+  // Neutral fallback, never a real org name: this string appears in the reset
+  // confirmation, so defaulting it to "DiamondAudit" could make the confirm
+  // claim you're resetting a different org than the one actually loaded while
+  // the org query is still resolving.
+  const orgName = org?.name ?? "your organization";
   const orgSlug = org?.slug ?? "org";
   const today = new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
 
@@ -160,7 +164,7 @@ export default function SeasonArchive() {
     [evaluatedPlayers, players, bundleEvaluations, categories, memberNameById],
   );
 
-  const handleDownloadBenchmarks = () => {
+  const handleDownloadBenchmarks = async () => {
     const benchmarks = buildSeasonBenchmarks(
       players.map(p => ({ id: p.id, date_of_birth: p.date_of_birth, tags: p.tags })),
       evaluations.map(e => ({ player_id: e.player_id, scores: e.scores as Scores })),
@@ -168,16 +172,20 @@ export default function SeasonArchive() {
       categories,
       orgName,
     );
-    downloadBlob(
-      new Blob([benchmarksToMarkdown(benchmarks)], { type: "text/markdown;charset=utf-8" }),
-      `diamondaudit-${orgSlug}-season-benchmarks.md`,
-    );
-    downloadBlob(
-      new Blob([benchmarksToJson(benchmarks)], { type: "application/json;charset=utf-8" }),
-      `diamondaudit-${orgSlug}-season-benchmarks.json`,
-    );
-    setDownloaded(prev => ({ ...prev, benchmarks: currentFingerprint }));
-    toast.success("Benchmarks downloaded");
+    setBusyArtifact("benchmarks");
+    try {
+      // Markdown + JSON bundled into one zip — see buildSeasonBenchmarksZip for
+      // why (two separate downloads from one click get the second silently
+      // blocked by the browser).
+      const blob = await buildSeasonBenchmarksZip(benchmarks);
+      downloadBlob(blob, `diamondaudit-${orgSlug}-season-benchmarks.zip`);
+      setDownloaded(prev => ({ ...prev, benchmarks: currentFingerprint }));
+      toast.success("Benchmarks downloaded");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't generate benchmarks");
+    } finally {
+      setBusyArtifact(null);
+    }
   };
 
   const handleDownloadReportCards = async () => {
@@ -340,8 +348,8 @@ export default function SeasonArchive() {
                 ) : !resetConfirm ? (
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-medium text-foreground">Reset tryout data</p>
-                      <p className="text-xs text-muted-foreground">Deletes all players, evaluations, and grades. Template and org settings are kept.</p>
+                      <p className="text-sm font-medium text-foreground">Reset <span className="text-destructive">{orgName}</span></p>
+                      <p className="text-xs text-muted-foreground">Deletes all players, evaluations, and grades in this organization. Template and org settings are kept.</p>
                     </div>
                     <button
                       onClick={() => setResetConfirm(true)}
@@ -352,8 +360,13 @@ export default function SeasonArchive() {
                   </div>
                 ) : (
                   <div className="space-y-3">
+                    {/* Lead with the org name, not just counts — the counts are
+                        the only tell today that you're on the org you think you
+                        are, and a wrong-account login can put you on the wrong
+                        org entirely (that exact mix-up happened during testing). */}
                     <p className="text-sm text-foreground">
-                      This deletes <strong className="tabular-nums">{players.length}</strong> players,{" "}
+                      This permanently resets <strong>{orgName}</strong> — deleting{" "}
+                      <strong className="tabular-nums">{players.length}</strong> players,{" "}
                       <strong className="tabular-nums">{evaluations.length}</strong> evaluations, and{" "}
                       <strong className="tabular-nums">{grades.length}</strong> grades. This can't be undone.
                     </p>

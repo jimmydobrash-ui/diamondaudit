@@ -1,3 +1,4 @@
+import JSZip from "jszip";
 import type { TemplateCategory } from "@/hooks/useEvaluationTemplate";
 import type { PlayerGradeValue } from "@/hooks/usePlayerGrades";
 import { playerAgeGroup, sortAgeGroups } from "./mock-data";
@@ -207,6 +208,20 @@ export function buildSeasonBenchmarks(
 
 export function benchmarksToJson(b: SeasonBenchmarks): string {
   return JSON.stringify(b, null, 2);
+}
+
+/**
+ * Bundle the Markdown + JSON into a single zip. Both are the same benchmarks,
+ * one human-readable and one machine-readable — but they must ship as ONE
+ * download: a single click that fires two separate downloadBlob() calls trips
+ * Chrome's "multiple automatic downloads" guard, which silently drops the
+ * second file (the JSON) with no error. One zip, one download, nothing lost.
+ */
+export async function buildSeasonBenchmarksZip(b: SeasonBenchmarks): Promise<Blob> {
+  const zip = new JSZip();
+  zip.file("season-benchmarks.md", benchmarksToMarkdown(b));
+  zip.file("season-benchmarks.json", benchmarksToJson(b));
+  return zip.generateAsync({ type: "blob" });
 }
 
 /** Human-readable Markdown — doubles as a starting draft for a "season recap" blog post. */
