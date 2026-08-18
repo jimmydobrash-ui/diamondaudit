@@ -1,8 +1,10 @@
 import { describe, it, expect } from "vitest";
+import JSZip from "jszip";
 import {
   buildSeasonBenchmarks,
   benchmarksToJson,
   benchmarksToMarkdown,
+  buildSeasonBenchmarksZip,
   type BenchmarkPlayerInput,
   type BenchmarkEvaluationInput,
   type BenchmarkGradeInput,
@@ -104,6 +106,18 @@ describe("buildSeasonBenchmarks", () => {
     expect(g10.playerCount).toBe(3);
     expect(g10.evaluatedCount).toBe(2);
     expect(g10.tiers.find(t => t.label === "Not yet evaluated")?.count).toBe(1);
+  });
+});
+
+describe("buildSeasonBenchmarksZip", () => {
+  it("bundles the markdown and json into a single zip (so the second download can't be blocked)", async () => {
+    const b = buildSeasonBenchmarks(players, evaluations, grades, categories, "Test Org");
+    const blob = await buildSeasonBenchmarksZip(b);
+    const zip = await JSZip.loadAsync(blob);
+    expect(Object.keys(zip.files).sort()).toEqual(["season-benchmarks.json", "season-benchmarks.md"]);
+    // The zipped contents match the standalone formatters exactly.
+    expect(await zip.file("season-benchmarks.md")!.async("string")).toBe(benchmarksToMarkdown(b));
+    expect(await zip.file("season-benchmarks.json")!.async("string")).toBe(benchmarksToJson(b));
   });
 });
 
