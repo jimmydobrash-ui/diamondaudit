@@ -31,6 +31,7 @@ const EvaluateList = lazy(importEvaluateList);
 const EvaluatePlayer = lazy(importEvaluatePlayer);
 const Leaderboard = lazy(importLeaderboard);
 const ManageTemplate = lazy(() => import("./pages/ManageTemplate"));
+const SeasonArchive = lazy(() => import("./pages/SeasonArchive"));
 const TeamBuilder = lazy(importTeamBuilder);
 const PlayerDetail = lazy(() => import("./pages/PlayerDetail"));
 const PlayerReport = lazy(() => import("./pages/PlayerReport"));
@@ -169,6 +170,7 @@ const AppRoutes = () => {
         <Route path="/team-builder" element={<ProtectedRoute><TeamBuilder /></ProtectedRoute>} />
         <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
         <Route path="/settings/template" element={<ProtectedRoute><ManageTemplate /></ProtectedRoute>} />
+        <Route path="/settings/season-archive" element={<ProtectedRoute><SeasonArchive /></ProtectedRoute>} />
         <Route path="/scoring-guide" element={<ProtectedRoute><ScoringGuide /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>

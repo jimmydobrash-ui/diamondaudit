@@ -1,10 +1,7 @@
 import ScoreRing from "@/components/ScoreRing";
 import { playerAgeGroup } from "@/lib/mock-data";
 import type { ScoreTier } from "@/lib/scoring";
-import type { ReportData } from "@/lib/reportCard";
-import type { Tables } from "@/integrations/supabase/types";
-
-type Player = Tables<"players">;
+import type { ReportData, ReportCardPlayer } from "@/lib/reportCard";
 
 const ordinal = (n: number): string => {
   const s = ["th", "st", "nd", "rd"];
@@ -46,7 +43,7 @@ export default function ReportCardDocument({
   evalCount,
   today,
 }: {
-  player: Player;
+  player: ReportCardPlayer;
   report: ReportData;
   evalCount: number;
   today: string;
@@ -133,6 +130,21 @@ export default function ReportCardDocument({
               </div>
             ))}
           </div>
+
+          {/* Coach notes — only present when the caller explicitly opted in
+              (the internal season archive); the family-facing single report
+              and regular bulk export never populate report.notes. */}
+          {report.notes && report.notes.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-sm font-semibold text-foreground px-1">Coach Notes</h2>
+              {report.notes.map((note, i) => (
+                <div key={i} className="bg-card rounded-xl p-4 card-elevated print:shadow-none print:border">
+                  <p className="text-[11px] font-semibold text-muted-foreground mb-1">{note.coachName}</p>
+                  <p className="text-sm text-foreground whitespace-pre-wrap">{note.text}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </>
       )}
 

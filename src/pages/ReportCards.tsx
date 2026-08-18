@@ -8,10 +8,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useEvaluations } from "@/hooks/useEvaluations";
 import { useEvaluationTemplate } from "@/hooks/useEvaluationTemplate";
-import { aggregateScoresByPlayer, visibleEvalCategories } from "@/lib/scoring";
 import { playerAgeGroup, sortAgeGroups } from "@/lib/mock-data";
 import { compareForTryout } from "@/lib/rosterOrder";
-import { buildPlayerReport, peerValuesByGroup, bulkReportFileName } from "@/lib/reportCard";
+import { buildReportCardBundle } from "@/lib/reportCard";
 import { generateReportCardsZip, downloadBlob } from "@/lib/reportCardsZip";
 import { ArrowLeft, Download, FileText } from "lucide-react";
 
@@ -38,12 +37,6 @@ export default function ReportCards() {
     return m;
   }, [evaluations]);
 
-  const allAggregates = useMemo(
-    () => aggregateScoresByPlayer(evaluations.map(e => ({ player_id: e.player_id, scores: e.scores as Scores }))),
-    [evaluations],
-  );
-  const peerValues = useMemo(() => peerValuesByGroup(players, allAggregates), [players, allAggregates]);
-
   // Age groups that actually have an evaluated athlete.
   const ageGroups = useMemo(() => {
     const set = new Set(players.filter(p => (evalCounts[p.id] ?? 0) > 0).map(p => playerAgeGroup(p)));
@@ -66,27 +59,23 @@ export default function ReportCards() {
     [players, activeGroup, isAllGroups, evalCounts],
   );
 
+  // folderPerGroup nests each file under a per-age-group folder only when
+  // spanning multiple groups — jersey numbers reset per group, so a flat
+  // "all" zip could otherwise let a 10U and 11U player with the same #
+  // overwrite each other. Each player's percentile still compares against
+  // their OWN age group's peers (buildReportCardBundle scopes peer values off
+  // `players`, the full roster, regardless of what's in `scopedPlayers`).
+  // includeNotes stays unset (false) — this export is family-facing ("ready
+  // to send to families" below), so coach notes never appear here.
   const cards = useMemo(
-    () => groupPlayers.map(p => {
-      const pGroup = playerAgeGroup(p);
-      return {
-        player: p,
-        // Nest under a per-age-group folder only when spanning multiple
-        // groups — jersey numbers reset per group, so a flat "all" zip could
-        // otherwise let a 10U and 11U player with the same # overwrite each
-        // other. Each player's percentile still compares against their OWN
-        // age group's peers, never mixed across groups.
-        filename: bulkReportFileName(p, isAllGroups ? pGroup : null),
-        evalCount: evalCounts[p.id] ?? 0,
-        report: buildPlayerReport(
-          allAggregates[p.id] ?? {},
-          peerValues[pGroup] ?? {},
-          categories,
-          visibleEvalCategories(categories, p.positions),
-        ),
-      };
+    () => buildReportCardBundle({
+      scopedPlayers: groupPlayers,
+      allPlayers: players,
+      evaluations: evaluations.map(e => ({ player_id: e.player_id, coach_id: e.coach_id, scores: e.scores as Scores, notes: e.notes })),
+      categories,
+      folderPerGroup: isAllGroups,
     }),
-    [groupPlayers, allAggregates, peerValues, isAllGroups, categories, evalCounts],
+    [groupPlayers, players, evaluations, categories, isAllGroups],
   );
 
   const isLoading = playersLoading || evalsLoading;
