@@ -1,16 +1,21 @@
 #!/usr/bin/env node
-// Blog generator for the marketing site.
+// Static-site generator for the marketing site.
 //
 // Design note: index.html is the single source of truth for site chrome. This
-// script lifts its <style>, <header>, and <footer> verbatim at build time
-// rather than keeping its own copies, so blog pages inherit the real nav and
-// theme automatically — change the nav on index.html and the blog follows on
-// the next build. That's deliberate: the six hand-written pages have already
-// drifted from each other once (the mobile-nav/footer-parity fix), and adding
-// a seventh copy here would just widen the problem.
+// script lifts its :root tokens, <header>, and <footer> at build time, so every
+// other page inherits the real nav, footer, and design tokens automatically —
+// change the nav on index.html and the whole site follows on the next build.
+// That's deliberate: the hand-written pages drifted from each other once
+// already (the mobile-nav/footer-parity fix), and duplicating chrome per page
+// is what caused it.
 //
-// Output is committed to the repo, so the Vercel project keeps serving
-// landing/ as plain static files with no build step and no config change.
+//   • index.html      — hand-written; the source of chrome + tokens.
+//   • _src/*.html      — content pages (clubs/pricing/tour): per-page metadata +
+//                        component CSS (no :root) + body. Generated into landing/.
+//   • blog/posts/*.html — blog fragments. Generated into landing/blog/.
+//
+// Output is committed to the repo, so the Vercel project keeps serving landing/
+// as plain static files with no build step and no config change.
 //
 // Usage: node landing/_build/build.mjs
 
@@ -19,19 +24,37 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const LANDING = join(dirname(fileURLToPath(import.meta.url)), "..");
+const SRC_DIR = join(LANDING, "_src");
 const POSTS_DIR = join(LANDING, "blog", "posts");
 const BLOG_OUT = join(LANDING, "blog");
 const SITE = "https://www.diamondaudit.io";
+const DEFAULT_OG_IMAGE = "https://diamondaudit.io/screenshots/app-dashboard.webp";
 
-// Pages that exist as hand-written files and belong in the sitemap. privacy
-// and terms are deliberately absent: both carry <meta name="robots"
-// content="noindex">, and submitting a noindex URL is a Search Console error.
-const STATIC_PAGES = ["/", "/clubs.html", "/pricing.html", "/tour.html"];
+// Hand-written pages that belong in the sitemap. privacy/terms are deliberately
+// absent: both carry <meta name="robots" content="noindex">, and submitting a
+// noindex URL is a Search Console error. The generated content pages and blog
+// posts are added to the sitemap separately, below.
+const HANDWRITTEN_INDEXED = ["/"];
 
 function extract(html, tag) {
   const m = html.match(new RegExp(`<${tag}[^>]*>[\\s\\S]*?</${tag}>`, "i"));
-  if (!m) throw new Error(`Could not find <${tag}> in index.html — the blog build reuses it for site chrome.`);
+  if (!m) throw new Error(`Could not find <${tag}> in index.html — the build reuses it for site chrome.`);
   return m[0];
+}
+
+// The shared :root token block, pulled out of index's <style> and re-wrapped so
+// every generated page carries exactly the same design tokens.
+function extractRootStyle(indexStyle) {
+  const m = indexStyle.match(/:root\s*\{[^}]*\}/);
+  if (!m) throw new Error("Could not find :root {…} in index.html's <style>.");
+  return `    <style>\n      ${m[0]}\n    </style>`;
+}
+
+// Drop the nav link that points at the current page, matching the hand-written
+// convention where a page never links to itself in its own nav.
+function stripSelfNavLink(headerHtml, path) {
+  const re = new RegExp(`\\s*<a\\b[^>]*href="${path.replace(/[.]/g, "\\.")}"[^>]*>[^<]*</a>`);
+  return headerHtml.replace(re, "");
 }
 
 function escapeHtml(s) {
@@ -44,8 +67,7 @@ function formatDate(iso) {
   });
 }
 
-/** Posts are content fragments led by a JSON metadata comment. */
-function parsePost(filename, raw) {
+function parseMeta(filename, raw, required) {
   const m = raw.match(/^<!--([\s\S]*?)-->/);
   if (!m) throw new Error(`${filename}: missing leading <!--{ ... }--> metadata block`);
   let meta;
@@ -54,17 +76,31 @@ function parsePost(filename, raw) {
   } catch (e) {
     throw new Error(`${filename}: metadata block is not valid JSON — ${e.message}`);
   }
-  for (const key of ["title", "date", "description"]) {
+  for (const key of required) {
     if (!meta[key]) throw new Error(`${filename}: metadata is missing "${key}"`);
   }
+  return { meta, rest: raw.slice(m[0].length).trim() };
+}
+
+/** Content page: metadata comment + a <style> component block + body HTML. */
+function parseContentPage(filename, raw) {
+  const { meta, rest } = parseMeta(filename, raw, ["title", "description", "path"]);
+  const styleMatch = rest.match(/<style>[\s\S]*?<\/style>/);
+  if (!styleMatch) throw new Error(`${filename}: expected a <style> block after the metadata`);
+  const body = rest.slice(styleMatch.index + styleMatch[0].length).trim();
+  return { ...meta, slug: meta.path.replace(/^\//, "").replace(/\.html$/, ""), styleBlock: styleMatch[0], body };
+}
+
+/** Blog post: metadata comment + body fragment (styles come from BLOG_CSS). */
+function parsePost(filename, raw) {
+  const { meta, rest } = parseMeta(filename, raw, ["title", "date", "description"]);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(meta.date)) {
     throw new Error(`${filename}: date must be YYYY-MM-DD, got "${meta.date}"`);
   }
-  return { ...meta, slug: filename.replace(/\.html$/, ""), body: raw.slice(m[0].length).trim() };
+  return { ...meta, slug: filename.replace(/\.html$/, ""), body: rest };
 }
 
-// Blog-specific styles, layered on top of index.html's tokens (which this
-// reuses — --surface, --border, --muted, --accent all come from there).
+// Blog-specific styles, layered on top of index.html's tokens.
 const BLOG_CSS = `
     <style>
       .post-wrap { max-width: 720px; margin: 0 auto; padding: 56px 20px 80px; }
@@ -96,7 +132,7 @@ const BLOG_CSS = `
       .back-link:hover { color: var(--text); }
     </style>`;
 
-function page({ title, description, canonical, chrome, content }) {
+function page({ title, description, canonical, ogType = "website", ogImage = DEFAULT_OG_IMAGE, ogDescription = description, styleHtml, header, content, footer, sourceLabel }) {
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -110,13 +146,13 @@ function page({ title, description, canonical, chrome, content }) {
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="canonical" href="${canonical}" />
 
-    <meta property="og:type" content="article" />
+    <meta property="og:type" content="${ogType}" />
     <meta property="og:title" content="${escapeHtml(title)}" />
-    <meta property="og:description" content="${escapeHtml(description)}" />
+    <meta property="og:description" content="${escapeHtml(ogDescription)}" />
     <meta property="og:url" content="${canonical}" />
-    <meta property="og:image" content="https://diamondaudit.io/screenshots/app-dashboard.webp" />
+    <meta property="og:image" content="${ogImage}" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://diamondaudit.io/screenshots/app-dashboard.webp" />
+    <meta name="twitter:image" content="${ogImage}" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -126,16 +162,15 @@ function page({ title, description, canonical, chrome, content }) {
     />
 
     <!-- GENERATED FILE — do not edit by hand.
-         Source: landing/blog/posts/  ·  Build: node landing/_build/build.mjs -->
-${chrome.style}
-${BLOG_CSS}
+         Source: ${sourceLabel}  ·  Build: node landing/_build/build.mjs -->
+${styleHtml}
     <script src="/analytics.js" defer></script>
   </head>
 
   <body>
-${chrome.header}
+${header}
 ${content}
-${chrome.footer}
+${footer}
   </body>
 </html>
 `;
@@ -174,9 +209,10 @@ ${items}
     </main>`;
 }
 
-function buildSitemap(posts) {
+function buildSitemap({ contentPaths, posts }) {
   const urls = [
-    ...STATIC_PAGES.map(p => `${SITE}${p}`),
+    ...HANDWRITTEN_INDEXED.map(p => `${SITE}${p}`),
+    ...contentPaths.map(p => `${SITE}${p}`),
     `${SITE}/blog/`,
     ...posts.map(p => `${SITE}/blog/${p.slug}.html`),
   ];
@@ -188,20 +224,46 @@ ${urls.map(u => `  <url><loc>${u}</loc></url>`).join("\n")}
 `;
 }
 
+function readFragments(dir, parse) {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter(f => f.endsWith(".html"))
+    .map(f => parse(f, readFileSync(join(dir, f), "utf8")));
+}
+
 function main() {
   const index = readFileSync(join(LANDING, "index.html"), "utf8");
   const chrome = {
-    style: extract(index, "style"),
+    fullStyle: extract(index, "style"),
+    rootStyle: extractRootStyle(index),
     header: extract(index, "header"),
     footer: extract(index, "footer"),
   };
 
-  if (!existsSync(POSTS_DIR)) mkdirSync(POSTS_DIR, { recursive: true });
-  const files = readdirSync(POSTS_DIR).filter(f => f.endsWith(".html"));
-  const posts = files
-    .map(f => parsePost(f, readFileSync(join(POSTS_DIR, f), "utf8")))
-    .sort((a, b) => b.date.localeCompare(a.date)); // newest first
+  // --- Content pages (clubs / pricing / tour) ---
+  const contentPages = readFragments(SRC_DIR, parseContentPage);
+  for (const p of contentPages) {
+    writeFileSync(
+      join(LANDING, `${p.slug}.html`),
+      page({
+        title: p.title,
+        description: p.description,
+        canonical: `${SITE}${p.path}`,
+        ogType: "website",
+        ogImage: p.ogImage || DEFAULT_OG_IMAGE,
+        ogDescription: p.ogDescription || p.description,
+        styleHtml: `${chrome.rootStyle}\n${p.styleBlock.replace(/^/, "    ")}`,
+        header: stripSelfNavLink(chrome.header, p.path),
+        content: p.body,
+        footer: chrome.footer,
+        sourceLabel: "landing/_src/",
+      }),
+    );
+  }
 
+  // --- Blog ---
+  if (!existsSync(POSTS_DIR)) mkdirSync(POSTS_DIR, { recursive: true });
+  const posts = readFragments(POSTS_DIR, parsePost).sort((a, b) => b.date.localeCompare(a.date));
   for (const post of posts) {
     writeFileSync(
       join(BLOG_OUT, `${post.slug}.html`),
@@ -209,26 +271,34 @@ function main() {
         title: `${post.title} — DiamondAudit`,
         description: post.description,
         canonical: `${SITE}/blog/${post.slug}.html`,
-        chrome,
+        ogType: "article",
+        styleHtml: `${chrome.fullStyle}\n${BLOG_CSS}`,
+        header: chrome.header,
         content: postContent(post),
+        footer: chrome.footer,
+        sourceLabel: "landing/blog/posts/",
       }),
     );
   }
-
   writeFileSync(
     join(BLOG_OUT, "index.html"),
     page({
       title: "Blog — DiamondAudit",
       description: "Notes on running better tryouts: process, evaluation, and what the data actually says.",
       canonical: `${SITE}/blog/`,
-      chrome,
+      ogType: "website",
+      styleHtml: `${chrome.fullStyle}\n${BLOG_CSS}`,
+      header: chrome.header,
       content: indexContent(posts),
+      footer: chrome.footer,
+      sourceLabel: "landing/blog/posts/",
     }),
   );
 
-  writeFileSync(join(LANDING, "sitemap.xml"), buildSitemap(posts));
+  writeFileSync(join(LANDING, "sitemap.xml"), buildSitemap({ contentPaths: contentPages.map(p => p.path), posts }));
 
-  console.log(`Built ${posts.length} post${posts.length === 1 ? "" : "s"} + blog index + sitemap.xml`);
+  console.log(`Built ${contentPages.length} content page(s) + ${posts.length} post(s) + blog index + sitemap.xml`);
+  for (const p of contentPages) console.log(`  ${p.path} — ${p.title}`);
   for (const p of posts) console.log(`  /blog/${p.slug}.html — ${p.title}`);
 }
 
