@@ -139,8 +139,6 @@ export default function ManageTemplate() {
   const [categories, setCategories] = useState<TemplateCategory[]>([]);
   const [saved, setSaved] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [resetConfirm, setResetConfirm] = useState(false);
-  const [resetting, setResetting] = useState(false);
   const [pendingInvites, setPendingInvites] = useState<Array<{ id: string; email: string; role: string; created_at: string }>>([]);
 
   useEffect(() => {
@@ -209,25 +207,6 @@ export default function ManageTemplate() {
       setSaved(true);
       toast.success("Template saved!");
     } catch (err) { toast.error(err instanceof Error ? err.message : String(err)); }
-  };
-
-  const handleResetData = async () => {
-    if (!organizationId) return;
-    setResetting(true);
-    try {
-      // Delete in order: grades → evaluations → players
-      await supabase.from("player_grades").delete().eq("organization_id", organizationId);
-      await supabase.from("evaluations").delete().eq("organization_id", organizationId);
-      await supabase.from("players").delete().eq("organization_id", organizationId);
-      toast.success("All tryout data has been reset!");
-      setResetConfirm(false);
-      // Refresh page to clear cached data
-      window.location.reload();
-    } catch (err) {
-      toast.error("Reset failed: " + (err instanceof Error ? err.message : String(err)));
-    } finally {
-      setResetting(false);
-    }
   };
 
   if (isLoading) {
@@ -382,38 +361,16 @@ export default function ManageTemplate() {
               <AlertTriangle className="w-4 h-4" /> Danger Zone
             </h2>
 
-            <div className="bg-card rounded-xl p-4 card-elevated border border-destructive/20">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-foreground">Reset Tryout Data</p>
-                  <p className="text-xs text-muted-foreground">Deletes all players, evaluations, and grades. Template and org settings are kept.</p>
-                </div>
-                {!resetConfirm ? (
-                  <button
-                    onClick={() => setResetConfirm(true)}
-                    className="h-9 px-4 rounded-lg bg-destructive/10 text-destructive text-xs font-semibold hover:bg-destructive/20 transition-colors"
-                  >
-                    Reset
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setResetConfirm(false)}
-                      className="h-9 px-3 rounded-lg bg-secondary text-foreground text-xs font-medium"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleResetData}
-                      disabled={resetting}
-                      className="h-9 px-4 rounded-lg bg-destructive text-destructive-foreground text-xs font-semibold disabled:opacity-50"
-                    >
-                      {resetting ? "Resetting..." : "Confirm Delete All"}
-                    </button>
-                  </div>
-                )}
+            <button
+              onClick={() => navigate("/settings/season-archive")}
+              className="w-full bg-card rounded-xl p-4 card-elevated border border-destructive/20 flex items-center justify-between gap-3 text-left hover:bg-destructive/5 transition-colors"
+            >
+              <div>
+                <p className="text-sm font-medium text-foreground">Season Archive &amp; Reset</p>
+                <p className="text-xs text-muted-foreground">Capture a full record of this season's data, then clear players, evaluations, and grades for next season.</p>
               </div>
-            </div>
+              <ArrowLeft className="w-4 h-4 text-muted-foreground flex-shrink-0 rotate-180" />
+            </button>
           </div>
         )}
       </div>

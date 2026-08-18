@@ -42,7 +42,7 @@ export function scoreTier(value: number): ScoreTier | null {
 }
 
 /** Round to one decimal place (e.g. 7.25 -> 7.3). */
-function round1(n: number): number {
+export function round1(n: number): number {
   return Math.round(n * 10) / 10;
 }
 
