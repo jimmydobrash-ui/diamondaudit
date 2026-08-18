@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="canonical" href="https://www.diamondaudit.io/blog/" />
 
-    <meta property="og:type" content="article" />
+    <meta property="og:type" content="website" />
     <meta property="og:title" content="Blog — DiamondAudit" />
     <meta property="og:description" content="Notes on running better tryouts: process, evaluation, and what the data actually says." />
     <meta property="og:url" content="https://www.diamondaudit.io/blog/" />
@@ -41,6 +41,11 @@
         --accent-soft: rgba(239, 68, 68, 0.12);
         --radius: 14px;
         --maxw: 1080px;
+        /* Used only by the generated content pages (clubs/pricing/tour); kept
+           here so :root is the single source of truth for every page's tokens. */
+        --faint: #6b7482;
+        --surface-2: #1b212b;
+        --good: #34d399;
       }
       * { box-sizing: border-box; margin: 0; padding: 0; }
       html { scroll-behavior: smooth; }
