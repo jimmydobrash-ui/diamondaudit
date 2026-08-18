@@ -17,7 +17,7 @@ import { buildReportCardBundle } from "@/lib/reportCard";
 import { generateReportCardsZip, downloadBlob } from "@/lib/reportCardsZip";
 import { buildSeasonBenchmarks, benchmarksToMarkdown, benchmarksToJson } from "@/lib/seasonBenchmarks";
 import { buildSeasonRawExportZip } from "@/lib/seasonRawExport";
-import { ArrowLeft, Download, FileText, Database, BarChart3, AlertTriangle, Check, Lock } from "lucide-react";
+import { ArrowLeft, Download, FileText, Database, BarChart3, AlertTriangle, Check, Lock, ShieldAlert } from "lucide-react";
 
 type Scores = Record<string, number>;
 type ArtifactKey = "benchmarks" | "reportCards" | "rawExport";
@@ -309,6 +309,23 @@ export default function SeasonArchive() {
               busy={busyArtifact === "rawExport"}
               disabled={busyArtifact !== null}
             />
+
+            {/* Steps 2 and 3 put minors' names, dates of birth and coach notes
+                on the admin's own device. Our privacy policy commits to not
+                retaining players' data past the season, so say plainly what
+                that means for the files they just downloaded — a promise on a
+                page nobody reads isn't worth much on its own. */}
+            <div className="bg-secondary/50 rounded-xl p-4 flex items-start gap-3">
+              <ShieldAlert className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+              <div className="text-xs text-muted-foreground leading-relaxed">
+                <p className="font-medium text-foreground mb-1">The report card and raw export contain players' personal information.</p>
+                <p>
+                  Names, dates of birth, and coach notes — including minors'. Once you've checked the
+                  archive is complete, delete those two files from your device. Only the anonymized
+                  benchmarks are meant to be kept.
+                </p>
+              </div>
+            </div>
 
             <div className="space-y-3 pt-4">
               <h2 className="text-sm font-semibold text-destructive flex items-center gap-2">
