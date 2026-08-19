@@ -183,6 +183,13 @@
       .post-list p { margin: 6px 0 0; color: var(--muted); font-size: 15px; }
       .back-link { display: inline-block; margin-bottom: 24px; color: var(--muted); text-decoration: none; font-size: 14px; }
       .back-link:hover { color: var(--text); }
+      .table-wrap { overflow-x: auto; margin: 24px 0; border: 1px solid var(--border); border-radius: var(--radius); }
+      .post-body table { width: 100%; border-collapse: collapse; font-size: 15px; }
+      .post-body th, .post-body td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+      .post-body thead th { background: var(--surface); color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; }
+      .post-body tbody tr:last-child td { border-bottom: none; }
+      .post-body td:not(:first-child), .post-body th:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+      .post-body caption { caption-side: bottom; color: var(--muted); font-size: 13px; padding: 10px 2px 0; text-align: left; }
     </style>
     <script src="/analytics.js" defer></script>
   </head>
@@ -208,6 +215,10 @@
       <h1>Notes from the field</h1>
       <p class="post-meta">Tryout process, evaluation, and what the data actually says.</p>
       <ul class="post-list">
+        <li>
+          <a href="/blog/gap-between-two-twelve-year-olds.html">The gap between two twelve-year-olds</a>
+          <p><time datetime="2026-08-18">August 18, 2026</time> · We pulled the anonymized numbers from a full season of tryouts — 156 athletes, exit velocity and throwing benchmarks by age group — and one of them changed how we think about evaluating players.</p>
+        </li>
         <li>
           <a href="/blog/defending-the-cut.html">Defending the cut</a>
           <p><time datetime="2026-08-14">August 14, 2026</time> · Why we built DiamondAudit: the hardest part of a tryout isn't scoring players, it's explaining the result afterward.</p>

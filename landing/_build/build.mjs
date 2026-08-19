@@ -130,6 +130,13 @@ const BLOG_CSS = `
       .post-list p { margin: 6px 0 0; color: var(--muted); font-size: 15px; }
       .back-link { display: inline-block; margin-bottom: 24px; color: var(--muted); text-decoration: none; font-size: 14px; }
       .back-link:hover { color: var(--text); }
+      .table-wrap { overflow-x: auto; margin: 24px 0; border: 1px solid var(--border); border-radius: var(--radius); }
+      .post-body table { width: 100%; border-collapse: collapse; font-size: 15px; }
+      .post-body th, .post-body td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+      .post-body thead th { background: var(--surface); color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; }
+      .post-body tbody tr:last-child td { border-bottom: none; }
+      .post-body td:not(:first-child), .post-body th:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+      .post-body caption { caption-side: bottom; color: var(--muted); font-size: 13px; padding: 10px 2px 0; text-align: left; }
     </style>`;
 
 function page({ title, description, canonical, ogType = "website", ogImage = DEFAULT_OG_IMAGE, ogDescription = description, styleHtml, header, content, footer, sourceLabel }) {
